@@ -2067,7 +2067,7 @@
         // Background Blur Model Loading
         async function initSegmenter() {
             if (segmenter) return;
-            showToast('Loading blur model...', 'info', true);
+            showToast('Downloading blur model...', 'info', true);
 
             segmenter = new SelfieSegmentation({
                 locateFile: (file) => {
@@ -2107,7 +2107,7 @@
 
             if (isHqLoading || isHqSegmenterInitialized) return;
             isHqLoading = true;
-            showToast('Downloading HQ model...', 'info', true);
+            showToast('Downloading HQ blur model...', 'info', true);
 
             try {
                 const ImageSegmenter = window.LocalImageSegmenter;
