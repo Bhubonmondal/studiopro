@@ -2115,7 +2115,7 @@
 
                 // Point the resolver to the official CDN containing internal JS/WASM structures
                 const vision = await FilesetResolver.forVisionTasks(
-                    "./models/tasks-vision/wasm"
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
                 );
 
                 imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
