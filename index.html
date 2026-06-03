@@ -16,11 +16,17 @@
     </script>
 
     <script src="./models/selfie_segmentation.js"></script>
-    <script type="module">
+    <!-- <script type="module">
         import { ImageSegmenter, FilesetResolver } from "./models/tasks-vision/vision_bundle.mjs";
         window.LocalImageSegmenter = ImageSegmenter;
         window.LocalFilesetResolver = FilesetResolver;
         console.log("MediaPipe local modules successfully hooked to window context.");
+    </script> -->
+    <script type="module">
+        import { ImageSegmenter, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.mjs";
+        window.LocalImageSegmenter = ImageSegmenter;
+        window.LocalFilesetResolver = FilesetResolver;
+        console.log("MediaPipe CDN modules successfully hooked to window context.");
     </script>
 
     <style>
@@ -2091,26 +2097,30 @@
         }
 
         // Offline High-Quality Multi-Class Engine Setup
+        // Offline High-Quality Multi-Class Engine Setup -> Converted to Online
         async function initHqSegmenter() {
             // Check window directly to ensure asynchronous modules have loaded
             if (!window.LocalImageSegmenter || !window.LocalFilesetResolver) {
-                console.warn("Waiting for local MediaPipe ES modules to compile...");
+                console.warn("Waiting for CDN MediaPipe ES modules to compile...");
                 return;
             }
 
             if (isHqLoading || isHqSegmenterInitialized) return;
             isHqLoading = true;
-            showToast('Loading offline High Quality model...', 'info', true);
+            showToast('Downloading HQ model...', 'info', true);
 
             try {
                 const ImageSegmenter = window.LocalImageSegmenter;
                 const FilesetResolver = window.LocalFilesetResolver;
 
-                // Point the resolver to the folder containing internal JS/WASM structures
-                const vision = await FilesetResolver.forVisionTasks("./models/tasks-vision/wasm");
+                // Point the resolver to the official CDN containing internal JS/WASM structures
+                const vision = await FilesetResolver.forVisionTasks(
+                    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+                );
 
                 imageSegmenter = await ImageSegmenter.createFromOptions(vision, {
                     baseOptions: {
+                        // Point to Google's official online model URL
                         modelAssetPath: "./models/tasks-vision/selfie_multiclass_256x256.tflite",
                         delegate: "GPU"
                     },
@@ -2122,10 +2132,10 @@
                 isHqSegmenterInitialized = true;
                 isHqLoading = false;
                 document.getElementById('toast-container').innerHTML = '';
-                showToast('Local HQ Selfie model initialized', 'success');
+                showToast('Online HQ Selfie model initialized', 'success');
             } catch (error) {
-                console.error("Local HQ Initialization failed:", error);
-                showToast('Failed to load local HQ model.', 'error');
+                console.error("Online HQ Initialization failed:", error);
+                showToast('Failed to load online HQ model.', 'error');
                 isHqLoading = false;
             }
         }
