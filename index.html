@@ -151,7 +151,7 @@
             transition: border-color 0.15s;
         }
 
-        
+
 
         input[type=range].custom-ladder-thumb::-webkit-slider-runnable-track {
             -webkit-appearance: none;
@@ -981,7 +981,7 @@
             camZoom: 1, camPanX: 0, camPanY: 0, micVolume: 100,
             pipSize: 150, pipBorderWidth: 6, pipBorderColor: '#ffffff',
             wbTool: 'pen1', pen1Color: '#ef4444', pen2Color: '#000000', highlighterColor: '#fbbf24',
-            wbSize: 16, wbBg: 'black', reelsMode: false,
+            wbSize: 16, wbBg: 'white', reelsMode: false,
 
             // Refined background replacements options for Google Meet quality
             bgBlurNoImg: 15,
@@ -1500,6 +1500,29 @@
 
             // 3. Regular Shortcuts (No Modifiers)
             if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+
+                if (!isPdfActive) {
+                    if (key === 'a') {
+                        e.preventDefault();
+                        handleBoardPrevPage();
+                        return;
+                    }
+                    if (key === 'd') {
+                        e.preventDefault();
+                        handleBoardNextPage();
+                        return;
+                    }
+                    if (key === 'delete') {
+                        e.preventDefault();
+                        // Match the exact same safety prompt as your visual button
+                        if (confirm(`Are you sure you want to delete Page ${currentBoardPage}? This action cannot be undone.`)) {
+                            handleBoardDeletePage();
+                        }
+                        return;
+                    }
+                }
+
+
                 // [P] Pen Tool Hotkey
                 if (key === 'p' || key === 's') {
                     e.preventDefault();
@@ -1636,7 +1659,7 @@
                             name: item.name,
                             type: item.type,
                             strokes: item.strokes || [],
-                            base64Data: item.base64Data || null
+                            base64Data: null
                         };
                     });
                     localStorage.setItem('webStudioPro_mediaQueue', JSON.stringify(serializableQueue));
@@ -1727,13 +1750,18 @@
                 syncBoardPageUI();
 
                 // --- NEW: Restore Saved Uploaded PDFs & Images cleanly ---
+                // INSIDE loadSettings()
                 const savedQueue = localStorage.getItem('webStudioPro_mediaQueue');
                 if (savedQueue) {
                     const parsedQueue = JSON.parse(savedQueue);
 
-                    // Core safety safeguard: Only spin up presentation overlays if items exist in data array
-                    if (parsedQueue && parsedQueue.length > 0) {
-                        mediaQueue = parsedQueue.map(item => {
+                    // NEW: Check if the items actually have data. 
+                    // Since we stopped saving base64Data, this will catch the "ghosts".
+                    const validQueue = parsedQueue.filter(item => item.base64Data !== null);
+
+                    // Only spin up presentation overlays if valid items exist
+                    if (validQueue && validQueue.length > 0) {
+                        mediaQueue = validQueue.map(item => {
                             return {
                                 name: item.name,
                                 type: item.type,
@@ -1749,10 +1777,11 @@
                         activeMediaIndex = 0;
                         loadMedia(0);
                     } else {
-                        // Wipe cache loops if array data string was empty to prevent sticky ghost frames
+                        // CLEANUP: Wipe cache loops and remove ghost files from LocalStorage
                         isPdfActive = false;
                         mediaQueue = [];
                         pdfPagesArray = [];
+                        localStorage.removeItem('webStudioPro_mediaQueue');
                     }
                 } else {
                     // Backup lifecycle reset when no local reference data exists on start
@@ -2107,7 +2136,7 @@
 
             if (isHqLoading || isHqSegmenterInitialized) return;
             isHqLoading = true;
-            showToast('Downloading HQ blur model...', 'info', true);
+            showToast('Downloading HQ model...', 'info', true);
 
             try {
                 const ImageSegmenter = window.LocalImageSegmenter;
@@ -2436,7 +2465,7 @@
             recalcPdfScrollBounds();
         }
 
-        function setupAudioMeter(stream) {
+        async function setupAudioMeter(stream) {
             if (audioContext) audioContext.close();
             const barsContainer = document.getElementById('audio-bars');
             barsContainer.innerHTML = '';
@@ -2451,12 +2480,26 @@
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 analyser = audioContext.createAnalyser();
                 microphone = audioContext.createMediaStreamSource(stream);
+
+                // --- NATIVE HARDWARE NOISE & RUMBLE FILTER ---
+                // No external files needed! This runs on the browser's native C++ engine.
+                const rumbleFilter = audioContext.createBiquadFilter();
+                rumbleFilter.type = 'highpass';
+                // 85Hz is the sweet spot: cuts out AC/fan hums without making voices sound thin
+                rumbleFilter.frequency.value = 85;
+
                 masterGain = audioContext.createGain();
                 masterGain.gain.value = S.micVolume / 100;
                 audioDest = audioContext.createMediaStreamDestination();
 
-                microphone.connect(masterGain); masterGain.connect(analyser); masterGain.connect(audioDest);
-                analyser.fftSize = 256; dataArray = new Uint8Array(analyser.frequencyBinCount);
+                // Pipeline: Mic -> Filter -> Gain -> Analyser -> Output
+                microphone.connect(rumbleFilter);
+                rumbleFilter.connect(masterGain);
+                masterGain.connect(analyser);
+                masterGain.connect(audioDest);
+
+                analyser.fftSize = 256;
+                dataArray = new Uint8Array(analyser.frequencyBinCount);
 
                 function drawAudioMeter() {
                     if (!audioContext || isMuted) {
@@ -2474,7 +2517,10 @@
                     audioMeterAnimationFrame = requestAnimationFrame(drawAudioMeter);
                 }
                 drawAudioMeter();
-            } catch (e) { }
+                console.log("Native Audio Filter Active!");
+            } catch (e) {
+                console.error("Audio Context Setup Failed:", e);
+            }
         }
 
         // Media Presentation List Management
@@ -2549,40 +2595,34 @@
             clampPipBounds();
         }
 
+        // UPDATE THIS FUNCTION
         function handleMediaUpload(files) {
             let added = false;
             let processedCount = 0;
 
             Array.from(files).forEach(file => {
                 if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
-                    const reader = new FileReader();
+                    // Push the raw file directly, skip the Base64 FileReader
+                    mediaQueue.push({
+                        file: file,
+                        type: file.type.startsWith('image/') ? 'image' : 'pdf',
+                        name: file.name,
+                        strokes: [],
+                        pages: null,
+                        base64Data: null
+                    });
 
-                    reader.onload = function (event) {
-                        const base64Data = event.target.result;
+                    if (!pdfZoomMap[file.name]) pdfZoomMap[file.name] = 1.0;
 
-                        mediaQueue.push({
-                            file: file,
-                            type: file.type.startsWith('image/') ? 'image' : 'pdf',
-                            name: file.name,
-                            strokes: [],
-                            pages: null,
-                            base64Data: base64Data // Save string copy to preserve inside localstorage
-                        });
-
-                        if (!pdfZoomMap[file.name]) pdfZoomMap[file.name] = 1.0;
-
-                        processedCount++;
-                        if (processedCount === files.length) {
-                            updateMediaListUI();
-                            if (!isPdfActive || mediaQueue.length === files.length) {
-                                loadMedia(mediaQueue.length - 1);
-                            }
-                            saveStrokes(); // Commit fresh queue updates to storage
-                            showToast('Media added and saved to queue.', 'success');
+                    processedCount++;
+                    if (processedCount === files.length) {
+                        updateMediaListUI();
+                        if (!isPdfActive || mediaQueue.length === files.length) {
+                            loadMedia(mediaQueue.length - 1);
                         }
-                    };
-
-                    reader.readAsDataURL(file);
+                        saveStrokes();
+                        showToast('Media added to queue.', 'success');
+                    }
                     added = true;
                 }
             });
@@ -2625,21 +2665,20 @@
             if (item.type === 'pdf') {
                 pdfLoadingToast = showToast('Rendering PDF pages...', 'info', true);
 
-                // Helper block to convert DataURL to an absolute safe ArrayBuffer for pdf.js core compiler engine
+                // Get the ArrayBuffer directly from the File object
                 const getArrayBuffer = async () => {
                     if (item.file) return await item.file.arrayBuffer();
-                    const base64Content = targetSource.split(',')[1];
-                    const binaryString = window.atob(base64Content);
-                    const len = binaryString.length;
-                    const bytes = new Uint8Array(len);
-                    for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
-                    return bytes.buffer;
+                    return null;
                 };
 
                 try {
                     const buffer = await getArrayBuffer();
+                    if (!buffer) throw new Error("File data lost. Please re-upload.");
+
+                    // Pass the raw buffer directly to pdf.js
                     pdfjsLib.getDocument({ data: buffer }).promise.then(async (pdf) => {
                         let tempPagesArray = [];
+                        // WARNING: See Step 4 regarding this loop
                         for (let i = 1; i <= pdf.numPages; i++) {
                             const page = await pdf.getPage(i);
                             const viewport = page.getViewport({ scale: 1.5 });
@@ -2679,6 +2718,31 @@
             }
         }
 
+        // NEW FUNCTION: Renders a page only when requested
+        async function renderPdfPageOnDemand(pageItem) {
+            if (pageItem.isRendering || pageItem.canvas) return;
+
+            pageItem.isRendering = true;
+            try {
+                const viewport = pageItem.pageObj.getViewport({ scale: 1.5 });
+                const pc = document.createElement('canvas');
+                pc.width = viewport.width;
+                pc.height = viewport.height;
+
+                // Draw the PDF page onto our temporary canvas
+                await pageItem.pageObj.render({
+                    canvasContext: pc.getContext('2d'),
+                    viewport: viewport
+                }).promise;
+
+                pageItem.canvas = pc; // Assign the finished canvas
+            } catch (e) {
+                console.error("Failed to lazy-load PDF page", e);
+            } finally {
+                pageItem.isRendering = false;
+            }
+        }
+
         function getPdfPageDimens(page, rot) {
             let effW = (rot % 180 !== 0) ? page.h : page.w;
             let effH = (rot % 180 !== 0) ? page.w : page.h;
@@ -2714,7 +2778,8 @@
 
         function updateScrollThumbPosition() {
             if (maxPdfScrollY <= 0) { scrollThumb.style.top = '0px'; return; }
-            const percent = pdfScrollY / maxPdfScrollY;
+            const percent = Math.max(0, Math.min(1, pdfScrollY / maxPdfScrollY));
+
             const trackTravel = scrollTrack.offsetHeight - scrollThumb.offsetHeight;
             scrollThumb.style.top = `${percent * trackTravel}px`;
         }
@@ -3180,17 +3245,47 @@
                 ctx.translate(pdfOffsetX, -pdfScrollY);
 
                 let drawY = 0;
+                // We define a memory buffer: keep pages loaded if they are within 2000px of the screen
+                const memoryBuffer = 2000;
+
                 for (let i = 0; i < pdfPagesArray.length; i++) {
                     const page = pdfPagesArray[i];
                     const baseScale = Math.min(CANVAS_WIDTH / page.w, CANVAS_HEIGHT / page.h);
                     const drawW = page.w * baseScale * currentZoom;
                     const drawH = page.h * baseScale * currentZoom;
-
                     const drawX = (CANVAS_WIDTH - drawW) / 2;
 
+                    // Check if the page is currently visible on the screen
                     if (drawY + drawH > pdfScrollY && drawY < pdfScrollY + CANVAS_HEIGHT) {
-                        ctx.drawImage(page.canvas, drawX, drawY, drawW, drawH);
+
+                        if (page.canvas) {
+                            // If the canvas exists in memory, draw it
+                            ctx.drawImage(page.canvas, drawX, drawY, drawW, drawH);
+                        } else {
+                            // Trigger the lazy loader in the background
+                            renderPdfPageOnDemand(page);
+
+                            // Draw a sleek placeholder box while the page is generating
+                            ctx.fillStyle = '#1e293b';
+                            ctx.fillRect(drawX, drawY, drawW, drawH);
+                            ctx.fillStyle = '#64748b';
+                            ctx.font = 'bold 24px Inter, sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.fillText('Loading Page...', drawX + (drawW / 2), drawY + (drawH / 2));
+                        }
+
                     }
+
+                    // GARBAGE COLLECTION: If the page is completely out of the viewport memory buffer
+                    if (drawY + drawH < pdfScrollY - memoryBuffer || drawY > pdfScrollY + CANVAS_HEIGHT + memoryBuffer) {
+                        if (page.canvas && !page.isRendering) {
+                            // Destroy the canvas width/height to force the browser to wipe it from RAM
+                            page.canvas.width = 0;
+                            page.canvas.height = 0;
+                            page.canvas = null;
+                        }
+                    }
+
                     drawY += drawH + (PDF_PAGE_GAP * currentZoom);
                 }
                 ctx.restore();
@@ -3888,7 +3983,9 @@
                 if (isPdfActive) {
                     pdfOffsetX = panStartOffset.x + (pos.x - panStartPos.x);
                     const scrollDelta = (pos.y - panStartPos.y);
-                    pdfScrollY = Math.max(0, Math.min(maxPdfScrollY, panStartOffset.y - scrollDelta));
+
+                    // NEW: Unrestricted panning allows short images to move up and down freely
+                    pdfScrollY = panStartOffset.y - scrollDelta;
                 } else {
                     boardOffsetX = panStartOffset.x + (pos.x - panStartPos.x);
                     boardOffsetY = panStartOffset.y + (pos.y - panStartPos.y);
