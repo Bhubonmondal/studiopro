@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Studio Pro</title>
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' fill='none' stroke='%236366f1' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'></path></svg>">
     <link rel="stylesheet" href="./libs/font-awesome-6.4.0.min.css"
         onerror="this.onerror=null;this.href='https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css';">
     <script src="./libs/tailwind.min.js"></script>
@@ -14,7 +16,6 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = './libs/pdf.worker.min.js';
     </script>
-
     <script src="./models/selfie_segmentation.js"></script>
     <!-- <script type="module">
         import { ImageSegmenter, FilesetResolver } from "./models/tasks-vision/vision_bundle.mjs";
@@ -30,11 +31,33 @@
     </script>
 
     <style>
+        /* Re-enable text selection ONLY for input fields so you can still type */
+        input,
+        textarea,
+        select {
+            -webkit-user-select: auto;
+            -moz-user-select: auto;
+            -ms-user-select: auto;
+            user-select: auto;
+        }
+
+        *:focus {
+            outline: none !important;
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #0f172a;
             color: #f8fafc;
             overflow: hidden;
+            -webkit-user-select: none;
+            /* Safari */
+            -moz-user-select: none;
+            /* Firefox */
+            -ms-user-select: none;
+            /* IE10+/Edge */
+            user-select: none;
+            /* Standard */
         }
 
         ::-webkit-scrollbar {
@@ -235,6 +258,15 @@
 </head>
 
 <body class="h-screen w-full flex bg-slate-900 overflow-hidden">
+    <svg width="0" height="0" style="position:absolute; width:0; height:0; pointer-events:none;">
+        <filter id="shadow-filter">
+            <feComponentTransfer id="shadow-transfer">
+                <feFuncR type="gamma" amplitude="1" exponent="1" offset="0"></feFuncR>
+                <feFuncG type="gamma" amplitude="1" exponent="1" offset="0"></feFuncG>
+                <feFuncB type="gamma" amplitude="1" exponent="1" offset="0"></feFuncB>
+            </feComponentTransfer>
+        </filter>
+    </svg>
 
     <!-- Left Sidebar -->
     <aside
@@ -311,8 +343,7 @@
                             <label class="text-xs font-medium text-slate-400">Rec FPS</label>
                             <select id="video-fps"
                                 class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white">
-                                <option value="30">30 FPS</option>
-                                <option value="60" selected>60 FPS</option>
+                                <option value="30" selected>30 FPS</option>
                             </select>
                         </div>
                     </div>
@@ -343,6 +374,37 @@
                         </label>
                         <input type="range" id="cam-pan-y" min="-100" max="100" value="0" class="w-full">
                     </div>
+                    <div class="space-y-2 pt-3 mt-2 border-t border-slate-700/50">
+                        <label
+                            class="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex justify-between items-center">
+                            Image Adjustments
+                            <button id="cam-reset-adjustments"
+                                class="text-indigo-400 hover:text-indigo-300 font-medium capitalize text-[9px] bg-indigo-500/10 px-2 py-0.5 rounded">Reset</button>
+                        </label>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-2 text-xs text-slate-400">
+                                <i class="fa-solid fa-sun w-4 text-center" title="Brightness"></i>
+                                <input type="range" id="cam-brightness" min="50" max="150" value="100" class="w-full">
+                                <span id="val-brightness" class="w-8 text-right font-mono text-[10px]">100%</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-400">
+                                <i class="fa-solid fa-circle-half-stroke w-4 text-center" title="Contrast"></i>
+                                <input type="range" id="cam-contrast" min="50" max="150" value="100" class="w-full">
+                                <span id="val-contrast" class="w-8 text-right font-mono text-[10px]">100%</span>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-400">
+                                <i class="fa-solid fa-droplet w-4 text-center" title="Saturation"></i>
+                                <input type="range" id="cam-saturation" min="0" max="200" value="100" class="w-full">
+                                <span id="val-saturation" class="w-8 text-right font-mono text-[10px]">100%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                                <i class="fa-solid fa-moon w-4 text-center" title="Reduce Shadows"></i>
+                                <input type="range" id="cam-shadows" min="0" max="100" value="0" class="w-full">
+                                <span id="val-shadows" class="w-8 text-right font-mono text-[10px]">0%</span>
+                            </div>
 
                 </div>
             </details>
@@ -582,6 +644,16 @@
                                 title="Insert Timestamp">
                                 <i class="fa-solid fa-clock"></i>
                             </button>
+                        </div>
+                    </div>
+                    <div class="space-y-1 pt-2 border-t border-slate-700/50 flex items-center justify-between">
+                        <label class="text-xs font-medium text-slate-400 flex flex-col">
+                            <span>Edge Vignette</span>
+                            <span class="text-[10px] text-slate-500 font-normal">Darken edges for focus</span>
+                        </label>
+                        <div class="w-8 h-4 bg-slate-800 rounded-full relative cursor-pointer" id="vignette-toggle-track">
+                            <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200"
+                                id="vignette-toggle-knob"></div>
                         </div>
                     </div>
                     <div class="space-y-1 pt-2 border-t border-slate-700/50 flex items-center justify-between">
@@ -833,7 +905,7 @@
             <!-- Presenter Focus Tool -->
             <button
                 class="tool-btn w-10 h-10 shrink-0 flex flex-col items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                data-tool="pointer" title="Presenter Focus [Alt + F] (Hide Media & Show Full Camera)">
+                data-tool="pointer" title="Camera mode [press C]">
                 <i class="fa-solid fa-user-circle text-lg"></i>
             </button>
 
@@ -842,7 +914,7 @@
             <!-- Hand Tool (Move & Pan) -->
             <button
                 class="tool-btn w-10 h-10 shrink-0 flex flex-col items-center justify-center rounded-xl text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
-                data-tool="hand" title="Hand Tool [press H]: Pan infinite canvas">
+                data-tool="hand" title="Hand Tool [press H]">
                 <i class="fa-solid fa-hand text-sm"></i>
                 <span class="text-[8px] font-bold uppercase tracking-tighter leading-none mt-0.5">Move</span>
             </button>
@@ -898,7 +970,7 @@
 
             <!-- Color Picker Box -->
             <div class="relative w-8 h-8 rounded-xl overflow-hidden border-2 border-slate-600 shadow-md cursor-pointer shrink-0"
-                title="Change Drawing Color">
+                title="Change Pen/Highlighter Color">
                 <input type="color" id="wb-color" value="#ef4444"
                     class="absolute -inset-2 w-14 h-14 cursor-pointer p-0 m-0 bg-transparent">
             </div>
@@ -976,14 +1048,14 @@
 
         const DEFAULT_SETTINGS = {
             audioSource: '', videoSource: '', effect: 'none',
-            resolution: '1920x1080', recFps: '60', cameraHz: 'auto', format: 'mp4', watermark: '',
+            resolution: '1920x1080', recFps: '30', cameraHz: 'auto', format: 'mp4', watermark: '',
             isMirrored: true, showGrid: false, useCountdown: false,
             camZoom: 1, camPanX: 0, camPanY: 0, micVolume: 100,
             pipSize: 150, pipBorderWidth: 6, pipBorderColor: '#ffffff',
             wbTool: 'pen1', pen1Color: '#ef4444', pen2Color: '#000000', highlighterColor: '#fbbf24',
             wbSize: 16, wbBg: 'white', reelsMode: false,
-
-            // Refined background replacements options for Google Meet quality
+            camBrightness: 100, camContrast: 100, camSaturation: 100, useVignette: false, camShadows: 0,
+            // background blur options
             bgBlurNoImg: 15,
             bgBlurWithImg: 5,
             subjectScale: 1.0,
@@ -1006,6 +1078,11 @@
         let cameraStream = null;
         let screenStream = null;
         let audioStream = null;
+
+        // Performance Throttling Variables
+        let lastSegmentationTime = 0;
+        const SEGMENTATION_INTERVAL = 1000 / 30; // Limit AI Background processing to 30 FPS to prevent CPU lag
+        let lastAudioDrawTime = 0;
 
         let recordedMousePos = { x: 0, y: 0, isOverCanvas: false };
 
@@ -1123,7 +1200,7 @@
         let isSegmenterInitialized = false;
 
         const canvas = document.getElementById('preview-canvas');
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        const ctx = canvas.getContext('2d', { alpha: false });
 
         const uiCanvas = document.getElementById('ui-canvas');
         const uiCtx = uiCanvas.getContext('2d');
@@ -1349,7 +1426,7 @@
                 //     updateCursor();
                 //     needsWbRedraw = true;
                 //     updateScrollbarVisibility();
-                //     showToast(`Board Background: ${nextBg.toUpperCase()}`, 'success');
+                //     showToast(`Solid Board Background: ${nextBg.toUpperCase()}`, 'success');
                 //     return;
                 // }
                 // Alt + R : Toggle Reels Mode (9:16 layout)
@@ -1535,6 +1612,28 @@
                     needsWbRedraw = true;
                     updateScrollbarVisibility();
                     // showToast('Pen 1 Actived', 'success');
+                    return;
+                }
+
+                // [C] Toggle Full Camera (Presenter Focus) / Board Hotkey
+                if (key === 'c') {
+                    e.preventDefault();
+                    if (S.wbTool === 'pointer') {
+                        // If already in Camera mode, toggle back to the Board/PDF (defaults to Pen)
+                        S.wbTool = 'pen1';
+                        isWhiteboardActive = true;
+                    } else {
+                        // If on the Board/PDF, toggle to Full Camera
+                        S.wbTool = 'pointer';
+                        isWhiteboardActive = false;
+                    }
+
+                    // Sync UI and states
+                    syncToolButtonUI();
+                    updateCursor();
+                    saveSettings();
+                    needsWbRedraw = true;
+                    updateScrollbarVisibility();
                     return;
                 }
 
@@ -1737,6 +1836,9 @@
                 const savedCurrentPage = localStorage.getItem('webStudioPro_currentBoardPage');
                 const savedTotalPages = localStorage.getItem('webStudioPro_totalBoardPages');
                 const savedMap = localStorage.getItem('webStudioPro_pagesStrokesMap');
+                S.camBrightness = parseInt(document.getElementById('cam-brightness').value);
+                S.camContrast = parseInt(document.getElementById('cam-contrast').value);
+                S.camSaturation = parseInt(document.getElementById('cam-saturation').value);
 
                 if (savedCurrentPage) currentBoardPage = parseInt(savedCurrentPage);
                 if (savedTotalPages) totalBoardPages = parseInt(savedTotalPages);
@@ -1745,6 +1847,23 @@
                     wbStrokes = pagesStrokesMap[currentBoardPage] || [];
                     needsWbRedraw = true;
                 }
+
+                document.getElementById('cam-brightness').value = S.camBrightness;
+                document.getElementById('val-brightness').textContent = `${S.camBrightness}%`;
+
+                document.getElementById('cam-contrast').value = S.camContrast;
+                document.getElementById('val-contrast').textContent = `${S.camContrast}%`;
+
+                document.getElementById('cam-saturation').value = S.camSaturation;
+                document.getElementById('val-saturation').textContent = `${S.camSaturation}%`;
+
+                S.camShadows = parseInt(document.getElementById('cam-shadows').value);
+
+                document.getElementById('cam-shadows').value = S.camShadows;
+                if (document.getElementById('val-shadows')) {
+                    document.getElementById('val-shadows').textContent = `${S.camShadows}%`;
+                }
+                updateShadowFilterDOM(S.camShadows);
 
                 // Force update the base layout page number indicators on browser boot-up instantly
                 syncBoardPageUI();
@@ -1802,7 +1921,7 @@
             watermarkInput.value = S.watermark;
             document.getElementById('mic-volume').value = S.micVolume;
             updateToggleUI(document.getElementById('reels-toggle-knob'), document.getElementById('reels-toggle-track'), S.reelsMode);
-
+            updateToggleUI(document.getElementById('vignette-toggle-knob'), document.getElementById('vignette-toggle-track'), S.useVignette);
             document.getElementById('cam-zoom').value = S.camZoom; document.getElementById('val-zoom').textContent = `${S.camZoom.toFixed(1)}x`;
             document.getElementById('cam-pan-x').value = S.camPanX; document.getElementById('val-panx').textContent = `${S.camPanX}%`;
             document.getElementById('cam-pan-y').value = S.camPanY; document.getElementById('val-pany').textContent = `${S.camPanY}%`;
@@ -1984,7 +2103,6 @@
         }
 
         // Listener for changes to inputs & background settings
-        // Listener for changes to inputs & background settings
         document.querySelectorAll('input, select').forEach(el => {
             if (el.id !== 'wb-color' && el.id !== 'wb-size-val') {
                 el.addEventListener('change', (e) => {
@@ -2020,6 +2138,12 @@
                     });
                 }
             }
+        });
+
+        document.getElementById('vignette-toggle-track').addEventListener('click', () => {
+            S.useVignette = !S.useVignette;
+            updateToggleUI(document.getElementById('vignette-toggle-knob'), document.getElementById('vignette-toggle-track'), S.useVignette);
+            saveSettings();
         });
 
         // Background preset actions
@@ -2089,7 +2213,7 @@
             updateCursor();
             needsWbRedraw = true;
             updateScrollbarVisibility();
-            showToast(`Board Background Set to ${e.target.value.toUpperCase()}`, 'success');
+            showToast(`Board Background Set to Solid ${e.target.value.toUpperCase()}`, 'success');
         });
 
         // Background Blur Model Loading
@@ -2122,7 +2246,7 @@
             isSegmenterInitialized = true; // Mark as completely ready!
 
             document.getElementById('toast-container').innerHTML = '';
-            showToast('blur model initialized', 'success');
+            showToast('Selfie model initialized', 'success');
         }
 
         // Offline High-Quality Multi-Class Engine Setup
@@ -2501,21 +2625,28 @@
                 analyser.fftSize = 256;
                 dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-                function drawAudioMeter() {
-                    if (!audioContext || isMuted) {
-                        Array.from(barsContainer.children).forEach(b => b.style.height = '2px');
-                    } else {
-                        analyser.getByteFrequencyData(dataArray);
-                        const step = Math.floor(analyser.frequencyBinCount / NUM_AUDIO_BARS);
-                        Array.from(barsContainer.children).forEach((bar, i) => {
-                            let sum = 0; for (let j = 0; j < step; j++) sum += dataArray[(i * step) + j];
-                            const avg = sum / step; const h = Math.max(2, (avg / 255) * 16);
-                            bar.className = `w-1 ${avg > 200 ? 'bg-red-500' : (avg > 150 ? 'bg-yellow-400' : 'bg-indigo-400')} rounded-t-sm transition-all duration-75`;
-                            bar.style.height = `${h}px`;
-                        });
+                function drawAudioMeter(time) {
+                    if (!time) time = performance.now();
+
+                    // Throttle UI updates to ~30 FPS to prevent DOM style recalculation lag
+                    if (time - lastAudioDrawTime > 33) {
+                        lastAudioDrawTime = time;
+                        if (!audioContext || isMuted) {
+                            Array.from(barsContainer.children).forEach(b => b.style.height = '2px');
+                        } else {
+                            analyser.getByteFrequencyData(dataArray);
+                            const step = Math.floor(analyser.frequencyBinCount / NUM_AUDIO_BARS);
+                            Array.from(barsContainer.children).forEach((bar, i) => {
+                                let sum = 0; for (let j = 0; j < step; j++) sum += dataArray[(i * step) + j];
+                                const avg = sum / step; const h = Math.max(2, (avg / 255) * 16);
+                                bar.className = `w-1 ${avg > 200 ? 'bg-red-500' : (avg > 150 ? 'bg-yellow-400' : 'bg-indigo-400')} rounded-t-sm transition-all duration-75`;
+                                bar.style.height = `${h}px`;
+                            });
+                        }
                     }
                     audioMeterAnimationFrame = requestAnimationFrame(drawAudioMeter);
                 }
+                requestAnimationFrame(drawAudioMeter); // Start loop with timestamp
                 drawAudioMeter();
                 console.log("Native Audio Filter Active!");
             } catch (e) {
@@ -2936,13 +3067,20 @@
         }
 
         function drawCameraFeed(ctxToDraw, videoEl, drawX, drawY, drawW, drawH, activeEffect) {
+            // Build the hardware-accelerated color adjustment string
+            let colorAdjustments = `brightness(${S.camBrightness}%) contrast(${S.camContrast}%) saturate(${S.camSaturation}%)`;
+            
+            // Inject the shadow-lifting gamma SVG filter if the slider is moved above 0
+            if (S.camShadows && S.camShadows > 0) {
+                colorAdjustments += ` url(#shadow-filter)`;
+            }
+
             // --- NEW HQ BLUR LOGIC ---
             if (activeEffect === 'bg-blur-hq' && currentSegmentationMask) {
-                // FIX: Prevent crash when switching from Standard to HQ blur.
-                // The variable briefly holds the old ImageBitmap which lacks this function.
                 if (typeof currentSegmentationMask.getAsFloat32Array !== 'function') {
-                    ctxToDraw.filter = 'none';
+                    ctxToDraw.filter = colorAdjustments;
                     ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+                    ctxToDraw.filter = 'none';
                     return;
                 }
 
@@ -2964,10 +3102,12 @@
                         bw = drawW; bh = bw / bgRatio;
                         bx = drawX; by = drawY + (drawH - bh) / 2;
                     }
-                    if (S.bgBlurWithImg > 0) ctxToDraw.filter = `blur(${S.bgBlurWithImg}px)`;
+                    let filterStr = colorAdjustments;
+                    if (S.bgBlurWithImg > 0) filterStr += ` blur(${S.bgBlurWithImg}px)`;
+                    ctxToDraw.filter = filterStr;
                     ctxToDraw.drawImage(bgImageObject, bx, by, bw, bh);
                 } else {
-                    ctxToDraw.filter = `blur(${Math.max(1, S.bgBlurNoImg)}px)`;
+                    ctxToDraw.filter = `blur(${Math.max(1, S.bgBlurNoImg)}px) ${colorAdjustments}`;
                     ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
                 }
                 ctxToDraw.restore();
@@ -2976,11 +3116,15 @@
                 hqFgCanvas.width = width;
                 hqFgCanvas.height = height;
 
+                // Apply Color Filters directly to the extracted subject!
+                hqFgCtx.save();
+                hqFgCtx.filter = colorAdjustments;
                 hqFgCtx.drawImage(videoEl, 0, 0, width, height);
+                hqFgCtx.restore();
+
                 const fgImgData = hqFgCtx.getImageData(0, 0, width, height);
                 const pixels = fgImgData.data;
 
-                // If confidence of background (index 0) is > 0.4, make transparent
                 for (let i = 0; i < maskData.length; i++) {
                     if (maskData[i] > 0.4) {
                         pixels[i * 4 + 3] = 0;
@@ -2988,10 +3132,8 @@
                 }
 
                 hqFgCtx.putImageData(fgImgData, 0, 0);
-
-                // Draw extracted subject onto main canvas, scaling to fit the draw bounds
                 ctxToDraw.drawImage(hqFgCanvas, drawX, drawY, drawW, drawH);
-                return; // Exit early, handled
+                return;
             }
 
             // --- EXISTING STANDARD BLUR LOGIC ---
@@ -3020,14 +3162,16 @@
                     bgTempCtx.drawImage(bgImageObject, bx, by, bw, bh);
 
                     ctxToDraw.save();
+                    let filterStr = colorAdjustments;
                     if (S.bgBlurWithImg > 0) {
-                        ctxToDraw.filter = `blur(${S.bgBlurWithImg}px)`;
+                        filterStr += ` blur(${S.bgBlurWithImg}px)`;
                     }
+                    ctxToDraw.filter = filterStr;
                     ctxToDraw.drawImage(bgTempCanvas, drawX, drawY, drawW, drawH);
                     ctxToDraw.restore();
                 } else {
                     ctxToDraw.save();
-                    ctxToDraw.filter = `blur(${S.bgBlurNoImg}px)`;
+                    ctxToDraw.filter = `blur(${S.bgBlurNoImg}px) ${colorAdjustments}`;
                     ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
                     ctxToDraw.restore();
                 }
@@ -3041,16 +3185,6 @@
 
                 segCtx.filter = `blur(${blurAmt}px) brightness(${brightnessVal}) contrast(${contrastVal})`;
 
-                // Flawless, crash-proof execution path for both standard and high-quality outputs!
-                if (currentSegmentationMask) {
-                    // Browser hardware automatically scales the ImageBitmap mask up onto the canvas dimensions
-                    segCtx.drawImage(currentSegmentationMask, 0, 0, segCanvas.width, segCanvas.height);
-                }
-
-                segCtx.filter = 'none';
-
-                // Differentiate between regular segmentation image assets and HQ raw buffer arrays
-                // Ensure our temporary mask compilation canvas matches the model's exact shape
                 if (!window.hqScratchCanvas) {
                     window.hqScratchCanvas = document.createElement('canvas');
                     window.hqScratchCanvas.width = 256;
@@ -3063,44 +3197,22 @@
                     const maskImgData = scratchCtx.createImageData(256, 256);
                     const data = maskImgData.data;
 
-                    // Parse the raw multiclass classifications array
                     for (let i = 0; i < currentSegmentationMask.length; i++) {
                         const classLabel = currentSegmentationMask[i];
                         const idx = i * 4;
-
-                        // Class Index Reference Mapping:
-                        // 0 = Background
-                        // 1 = Hair, 2 = Body Skin, 3 = Face Skin, 4 = Clothes, 5 = Accessories
                         if (classLabel > 0) {
-                            // Human Subject Pixel: Make it fully visible (Opaque White)
-                            data[idx] = 255; // R
-                            data[idx + 1] = 255; // G
-                            data[idx + 2] = 255; // B
-                            data[idx + 3] = 255; // Alpha
+                            data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
                         } else {
-                            // Background Pixel: Make it completely see-through
-                            data[idx] = 0;
-                            data[idx + 1] = 0;
-                            data[idx + 2] = 0;
-                            data[idx + 3] = 0;
+                            data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 0;
                         }
                     }
-
-                    // Dump the generated mask image data onto the scratch pad canvas
                     scratchCtx.putImageData(maskImgData, 0, 0);
-
-                    // Draw and automatically upscale the mask to match your camera dimensions
                     segCtx.drawImage(window.hqScratchCanvas, 0, 0, segCanvas.width, segCanvas.height);
                 } else if (currentSegmentationMask) {
-                    // Fallback path handling for standard legacy SelfieSegmentation canvas objects
-                    segCtx.drawImage(currentSegmentationMask, 0, 0);
-                } else {
-                    // Fallback path handling for standard SelfieSegmentation canvas objects
-                    segCtx.drawImage(currentSegmentationMask, 0, 0);
+                    segCtx.drawImage(currentSegmentationMask, 0, 0, segCanvas.width, segCanvas.height);
                 }
 
                 segCtx.filter = 'none';
-
                 segCtx.globalCompositeOperation = 'source-in';
 
                 const sw = segCanvas.width;
@@ -3108,14 +3220,38 @@
                 segCtx.translate(sw / 2, sh / 2);
                 segCtx.scale(S.subjectScale, S.subjectScale);
                 segCtx.translate(-sw / 2 + S.subjectPanX, -sh / 2 + S.subjectPanY);
+
+                // Apply Color Filters directly to the extracted subject!
+                segCtx.filter = colorAdjustments;
                 segCtx.drawImage(videoEl, 0, 0);
 
                 segCtx.restore();
-
                 ctxToDraw.drawImage(segCanvas, drawX, drawY, drawW, drawH);
             } else {
-                ctxToDraw.filter = activeEffect !== 'none' && activeEffect !== 'bg-blur' ? activeEffect : 'none';
+                // NORMAL DRAWING (No Background Replacements)
+                let finalFilter = colorAdjustments;
+                if (activeEffect !== 'none' && activeEffect !== 'bg-blur') {
+                    finalFilter += ` ${activeEffect}`; // Stack grayscale/sepia on top if selected
+                }
+                ctxToDraw.filter = finalFilter;
                 ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+                ctxToDraw.filter = 'none'; // Clear filter for next frame
+            }
+            // Apply Edge Vignette Overlay
+            if (S.useVignette) {
+                ctxToDraw.save();
+                // Create a radial gradient from the center to the edges
+                const gradient = ctxToDraw.createRadialGradient(
+                    drawX + drawW / 2, drawY + drawH / 2, drawW * 0.35, // Inner transparent circle
+                    drawX + drawW / 2, drawY + drawH / 2, drawW * 0.75  // Outer dark boundary
+                );
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');      // Transparent center
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0.65)');   // Dark edges
+                
+                ctxToDraw.fillStyle = gradient;
+                ctxToDraw.globalCompositeOperation = 'source-over'; // Blend naturally on top
+                ctxToDraw.fillRect(drawX, drawY, drawW, drawH);
+                ctxToDraw.restore();
             }
         }
 
@@ -3139,13 +3275,16 @@
         }
 
         function renderCanvas() {
-            // --- Inside renderCanvas() loop ---
+            const now = performance.now();
+
             // --- Inside renderCanvas() loop ---
             if (S.effect === 'bg-blur') {
                 if (!segmenter) initSegmenter();
                 if (cameraVideo.readyState >= 2 && !cameraVideo.paused && isSegmenterInitialized) {
-                    if (!isSegmenting) {
+                    // Throttle ML segmentation network calls
+                    if (!isSegmenting && (now - lastSegmentationTime > SEGMENTATION_INTERVAL)) {
                         isSegmenting = true;
+                        lastSegmentationTime = now;
                         segmenter.send({ image: cameraVideo }).catch(e => { isSegmenting = false; });
                     }
                 }
@@ -3153,19 +3292,22 @@
                 if (!imageSegmenter) {
                     initHqSegmenter();
                 } else if (cameraVideo.readyState >= 2 && !cameraVideo.paused && isHqSegmenterInitialized) {
-                    const startTimeMs = performance.now();
-                    const result = imageSegmenter.segmentForVideo(cameraVideo, startTimeMs);
+                    // Throttle ML segmentation network calls
+                    if (now - lastSegmentationTime > SEGMENTATION_INTERVAL) {
+                        lastSegmentationTime = now;
+                        const result = imageSegmenter.segmentForVideo(cameraVideo, now);
 
-                    if (result && result.confidenceMasks && result.confidenceMasks.length > 0) {
-                        // 1. Clean up the allocated instance from the previous frame
-                        if (lastHqMaskInstance && typeof lastHqMaskInstance.close === 'function') {
-                            lastHqMaskInstance.close();
+                        if (result && result.confidenceMasks && result.confidenceMasks.length > 0) {
+                            // Clean up the allocated instance from the previous frame
+                            if (lastHqMaskInstance && typeof lastHqMaskInstance.close === 'function') {
+                                lastHqMaskInstance.close();
+                            }
+
+                            // Extract and preserve the current mask
+                            const newMask = result.confidenceMasks[0];
+                            currentSegmentationMask = newMask;
+                            lastHqMaskInstance = newMask;
                         }
-
-                        // 2. Extract and preserve the current mask
-                        const newMask = result.confidenceMasks[0];
-                        currentSegmentationMask = newMask;
-                        lastHqMaskInstance = newMask; // Cache it for disposal on the next cycle
                     }
                 }
             }
@@ -4065,9 +4207,10 @@
             }
 
             recordedChunks = [];
-            const fps = parseInt(fpsSelect.value || 60);
+            // const fps = parseInt(fpsSelect.value || 60);
+            const fps = 30;
             const canvasStream = canvas.captureStream(fps);
-            const audioTracks = audioDest ? audioDest.stream.getAudioTracks() : audioStream.getAudioTracks();
+            const audioTracks = audioStream.getAudioTracks();
             const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
 
             let mimeType = 'video/mp4'; let fileExtension = 'mp4';
@@ -4099,7 +4242,7 @@
             recordingIndicator.classList.remove('hidden'); recordingIndicator.classList.add('flex');
 
             timerInterval = setInterval(() => { if (!isPaused) { secondsRecorded++; updateTimer(); } }, 1000);
-            showToast('Recording started.');
+            showToast('Recording..');
         }
 
         async function saveRecordingFile(blob, ext, mimeType) {
@@ -4108,7 +4251,7 @@
                 if ('showSaveFilePicker' in window) {
                     const handle = await window.showSaveFilePicker({ suggestedName: filename, types: [{ description: 'Video File', accept: { [mimeType]: [`.${ext}`] } }] });
                     const writable = await handle.createWritable(); await writable.write(blob); await writable.close();
-                    showToast('Recording saved.', 'success');
+                    // showToast('Recording saved.', 'success');
                 } else throw new Error('Fallback');
             } catch (err) {
                 if (err.name !== 'AbortError') {
@@ -4150,6 +4293,47 @@
             const val = parseInt(e.target.value);
             document.getElementById('val-pany').textContent = `${val}%`;
             S.camPanY = val;
+            saveSettings();
+        });
+        function updateShadowFilterDOM(value) {
+            // 0 = no change (gamma 1). 100 = max shadow lift (gamma ~0.45)
+            const exponent = 1.0 - (value / 100) * 0.55;
+            const transfer = document.getElementById('shadow-transfer');
+            if (transfer) {
+                transfer.innerHTML = `
+                    <feFuncR type="gamma" amplitude="1" exponent="${exponent}" offset="0"></feFuncR>
+                    <feFuncG type="gamma" amplitude="1" exponent="${exponent}" offset="0"></feFuncG>
+                    <feFuncB type="gamma" amplitude="1" exponent="${exponent}" offset="0"></feFuncB>
+                `;
+            }
+        }
+        // Color & Shadow Adjustments Event Listeners
+        ['brightness', 'contrast', 'saturation', 'shadows'].forEach(setting => {
+            document.getElementById(`cam-${setting}`).addEventListener('input', (e) => {
+                const val = parseInt(e.target.value);
+                document.getElementById(`val-${setting}`).textContent = `${val}%`;
+                S[`cam${setting.charAt(0).toUpperCase() + setting.slice(1)}`] = val;
+                
+                // Update SVG DOM live without lagging the canvas
+                if (setting === 'shadows') {
+                    updateShadowFilterDOM(val);
+                }
+                saveSettings();
+            });
+        });
+
+        document.getElementById('cam-reset-adjustments').addEventListener('click', () => {
+            ['brightness', 'contrast', 'saturation'].forEach(setting => {
+                S[`cam${setting.charAt(0).toUpperCase() + setting.slice(1)}`] = 100;
+                document.getElementById(`cam-${setting}`).value = 100;
+                document.getElementById(`val-${setting}`).textContent = `100%`;
+            });
+            // Reset Shadows specifically to 0
+            S.camShadows = 0;
+            document.getElementById('cam-shadows').value = 0;
+            document.getElementById('val-shadows').textContent = `0%`;
+            updateShadowFilterDOM(0);
+            
             saveSettings();
         });
         document.getElementById('screen-share-btn').addEventListener('click', toggleScreenShare);
@@ -4434,7 +4618,7 @@
                 currentBoardPage--;
                 syncBoardPageUI();
             }
-        }
+        }        
 
         // Bind Page Cluster Click Interceptors
         document.getElementById('board-prev-btn').addEventListener('click', (e) => {
