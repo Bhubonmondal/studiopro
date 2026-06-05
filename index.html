@@ -319,6 +319,16 @@
                             <option value="">Loading devices...</option>
                         </select>
                     </div>
+                    <div class="space-y-1 pt-2 border-t border-slate-700/50 flex items-center justify-between">
+                        <label class="text-xs font-medium text-slate-400 flex flex-col">
+                            <span>Floating Camera</span>
+                            <span class="text-[10px] text-slate-500 font-normal">Camera on board & presentation</span>
+                        </label>
+                        <div class="w-8 h-4 bg-slate-800 rounded-full relative cursor-pointer" id="pip-toggle-track">
+                            <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200"
+                                id="pip-toggle-knob"></div>
+                        </div>
+                    </div>
                     <div class="space-y-1">
                         <label class="text-xs font-medium text-slate-400">Resolution</label>
                         <select id="video-resolution"
@@ -1050,7 +1060,7 @@
             audioSource: '', videoSource: '', effect: 'none',
             resolution: '1920x1080', recFps: '30', cameraHz: 'auto', format: 'mp4', watermark: '',
             isMirrored: true, showGrid: false, useCountdown: false,
-            camZoom: 1, camPanX: 0, camPanY: 0, micVolume: 100,
+            camZoom: 1, camPanX: 0, camPanY: 0, micVolume: 100, showPip: true,
             pipSize: 150, pipBorderWidth: 6, pipBorderColor: '#ffffff',
             wbTool: 'pen1', pen1Color: '#ef4444', pen2Color: '#000000', highlighterColor: '#fbbf24',
             wbSize: 16, wbBg: 'white', reelsMode: false,
@@ -1848,6 +1858,8 @@
                     needsWbRedraw = true;
                 }
 
+                updateToggleUI(document.getElementById('pip-toggle-knob'), document.getElementById('pip-toggle-track'), S.showPip);
+
                 document.getElementById('cam-brightness').value = S.camBrightness;
                 document.getElementById('val-brightness').textContent = `${S.camBrightness}%`;
 
@@ -2138,6 +2150,12 @@
                     });
                 }
             }
+        });
+
+        document.getElementById('pip-toggle-track').addEventListener('click', () => {
+            S.showPip = !S.showPip;
+            updateToggleUI(document.getElementById('pip-toggle-knob'), document.getElementById('pip-toggle-track'), S.showPip);
+            saveSettings();
         });
 
         document.getElementById('vignette-toggle-track').addEventListener('click', () => {
@@ -3449,7 +3467,8 @@
                 }
             }
 
-            const usePip = !forceCamera && !cameraDrawnAsBackground && (isScreenRecording || isWhiteboardActive || isPdfActive);
+            // Check if the user has S.showPip enabled before drawing the PIP circle
+            const usePip = S.showPip && !forceCamera && !cameraDrawnAsBackground && (isScreenRecording || isWhiteboardActive || isPdfActive);
 
             // PIP Camera Circle
             if (usePip && cameraVideo.readyState >= 2) {
