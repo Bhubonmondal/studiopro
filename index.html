@@ -29,6 +29,17 @@
         window.LocalFilesetResolver = FilesetResolver;
         console.log("MediaPipe CDN modules successfully hooked to window context.");
     </script>
+    <script type="module">
+        import {
+            Output,
+            Mp4OutputFormat,
+            StreamTarget,
+            MediaStreamVideoTrackSource,
+            MediaStreamAudioTrackSource
+        } from "https://cdn.jsdelivr.net/npm/mediabunny@latest/+esm";
+
+        window.MB = { Output, Mp4OutputFormat, StreamTarget, MediaStreamVideoTrackSource, MediaStreamAudioTrackSource };
+    </script>
 
     <style>
         /* Re-enable text selection ONLY for input fields so you can still type */
@@ -258,15 +269,7 @@
 </head>
 
 <body class="h-screen w-full flex bg-slate-900 overflow-hidden">
-    <svg width="0" height="0" style="position:absolute; width:0; height:0; pointer-events:none;">
-        <filter id="shadow-filter">
-            <feComponentTransfer id="shadow-transfer">
-                <feFuncR type="gamma" amplitude="1" exponent="1" offset="0"></feFuncR>
-                <feFuncG type="gamma" amplitude="1" exponent="1" offset="0"></feFuncG>
-                <feFuncB type="gamma" amplitude="1" exponent="1" offset="0"></feFuncB>
-            </feComponentTransfer>
-        </filter>
-    </svg>
+
 
     <!-- Left Sidebar -->
     <aside
@@ -296,7 +299,23 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                 </summary>
+
                 <div class="p-3 pt-0 space-y-3">
+                    <div class="space-y-1 pt-2 border-t border-slate-700/50">
+                        <label class="text-xs font-medium text-slate-400">Video Saving Location</label>
+                        <div class="flex items-center gap-2">
+                            <button id="choose-dir-btn"
+                                class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-xs px-2 py-1 text-white whitespace-nowrap transition-colors"
+                                title="Select default save folder">
+                                <i class="fa-solid fa-folder-open text-indigo-400 mr-1"></i> Change Folder
+                            </button>
+                            <div id="save-dir-display"
+                                class="text-[10px] text-slate-400 truncate w-full bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50"
+                                title="All videos will be save to this location">
+                                Always ask Location
+                            </div>
+                        </div>
+                    </div>
                     <div class="space-y-1">
                         <label class="text-xs font-medium text-slate-400">Microphone</label>
                         <select id="audio-source"
@@ -310,8 +329,12 @@
                                 </path>
                             </svg>
                             <input type="range" id="mic-volume" min="0" max="200" value="100" class="w-full">
+
+                            <span id="val-mic-volume"
+                                class="w-8 text-right font-mono text-[10px] text-slate-400">100%</span>
                         </div>
                     </div>
+
                     <div class="space-y-1">
                         <label class="text-xs font-medium text-slate-400">Camera</label>
                         <select id="video-source"
@@ -362,28 +385,51 @@
                         <select id="video-format"
                             class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white">
                             <option value="mp4" selected>MP4 (H.264)</option>
-                            <option value="webm">WebM (VP9/VP8)</option>
+                            <!-- <option value="webm">WebM (VP9/VP8)</option> -->
                         </select>
                     </div>
 
-                    <div class="space-y-2">
-                        <label class="text-xs font-medium text-slate-400 flex justify-between">
-                            Camera Zoom/Crop <span id="val-zoom">1.0x</span>
+                    <!-- Camera Adjustments Section -->
+                    <div class="space-y-3 pt-3 mt-2 border-t border-slate-700/50">
+                        <label
+                            class="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex justify-between items-center">
+                            Camera Adjustments
+                            <button id="cam-reset-transform"
+                                class="text-indigo-400 hover:text-indigo-300 font-medium capitalize text-[9px] bg-indigo-500/10 px-2 py-0.5 rounded">Reset</button>
                         </label>
-                        <input type="range" id="cam-zoom" min="1" max="3" step="0.1" value="1" class="w-full">
+
+                        <div class="space-y-3">
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-medium text-slate-400 flex justify-between">
+                                    <span class="flex items-center gap-1.5"><i
+                                            class="fa-solid fa-magnifying-glass text-indigo-400"></i>Camera Zoom / Crop</span>
+                                    <span id="val-zoom" class="font-mono">1.0x</span>
+                                </label>
+                                <input type="range" id="cam-zoom" min="1" max="3" step="0.1" value="1" class="w-full">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-medium text-slate-400 flex justify-between">
+                                    <span class="flex items-center gap-1.5"><i
+                                            class="fa-solid fa-arrows-left-right text-indigo-400"></i> Camera Move
+                                        (Left/Right)</span>
+                                    <span id="val-panx" class="font-mono">0%</span>
+                                </label>
+                                <input type="range" id="cam-pan-x" min="-100" max="100" value="0" class="w-full">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-medium text-slate-400 flex justify-between">
+                                    <span class="flex items-center gap-1.5"><i
+                                            class="fa-solid fa-arrows-up-down text-indigo-400"></i> Camera Move
+                                        Top/Bottom</span>
+                                    <span id="val-pany" class="font-mono">0%</span>
+                                </label>
+                                <input type="range" id="cam-pan-y" min="-100" max="100" value="0" class="w-full">
+                            </div>
+                        </div>
                     </div>
-                    <div class="space-y-2">
-                        <label class="text-xs font-medium text-slate-400 flex justify-between">
-                            Camera Move Left/Right <span id="val-panx">0%</span>
-                        </label>
-                        <input type="range" id="cam-pan-x" min="-100" max="100" value="0" class="w-full">
-                    </div>
-                    <div class="space-y-2">
-                        <label class="text-xs font-medium text-slate-400 flex justify-between">
-                            Camera Move Top/Bottom <span id="val-pany">0%</span>
-                        </label>
-                        <input type="range" id="cam-pan-y" min="-100" max="100" value="0" class="w-full">
-                    </div>
+
+
+
                     <div class="space-y-2 pt-3 mt-2 border-t border-slate-700/50">
                         <label
                             class="text-[10px] uppercase font-bold text-slate-500 tracking-wider flex justify-between items-center">
@@ -411,10 +457,10 @@
                     </div>
 
                     <div class="flex items-center gap-2 text-xs text-slate-400">
-                                <i class="fa-solid fa-moon w-4 text-center" title="Reduce Shadows"></i>
-                                <input type="range" id="cam-shadows" min="0" max="100" value="0" class="w-full">
-                                <span id="val-shadows" class="w-8 text-right font-mono text-[10px]">0%</span>
-                            </div>
+                        <i class="fa-solid fa-moon w-4 text-center" title="Reduce Shadows"></i>
+                        <input type="range" id="cam-shadows" min="0" max="100" value="0" class="w-full">
+                        <span id="val-shadows" class="w-8 text-right font-mono text-[10px]">0%</span>
+                    </div>
 
                 </div>
             </details>
@@ -661,7 +707,8 @@
                             <span>Edge Vignette</span>
                             <span class="text-[10px] text-slate-500 font-normal">Darken edges for focus</span>
                         </label>
-                        <div class="w-8 h-4 bg-slate-800 rounded-full relative cursor-pointer" id="vignette-toggle-track">
+                        <div class="w-8 h-4 bg-slate-800 rounded-full relative cursor-pointer"
+                            id="vignette-toggle-track">
                             <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200"
                                 id="vignette-toggle-knob"></div>
                         </div>
@@ -1850,6 +1897,7 @@
                 S.camContrast = parseInt(document.getElementById('cam-contrast').value);
                 S.camSaturation = parseInt(document.getElementById('cam-saturation').value);
 
+
                 if (savedCurrentPage) currentBoardPage = parseInt(savedCurrentPage);
                 if (savedTotalPages) totalBoardPages = parseInt(savedTotalPages);
                 if (savedMap) {
@@ -1875,7 +1923,7 @@
                 if (document.getElementById('val-shadows')) {
                     document.getElementById('val-shadows').textContent = `${S.camShadows}%`;
                 }
-                updateShadowFilterDOM(S.camShadows);
+                // updateShadowFilterString(S.camShadows);
 
                 // Force update the base layout page number indicators on browser boot-up instantly
                 syncBoardPageUI();
@@ -3085,193 +3133,212 @@
         }
 
         function drawCameraFeed(ctxToDraw, videoEl, drawX, drawY, drawW, drawH, activeEffect) {
-            // Build the hardware-accelerated color adjustment string
-            let colorAdjustments = `brightness(${S.camBrightness}%) contrast(${S.camContrast}%) saturate(${S.camSaturation}%)`;
-            
-            // Inject the shadow-lifting gamma SVG filter if the slider is moved above 0
-            if (S.camShadows && S.camShadows > 0) {
-                colorAdjustments += ` url(#shadow-filter)`;
-            }
+    // Build the hardware-accelerated color adjustment string
+    let colorAdjustments = `brightness(${S.camBrightness}%) contrast(${S.camContrast}%) saturate(${S.camSaturation}%)`;
 
-            // --- NEW HQ BLUR LOGIC ---
-            if (activeEffect === 'bg-blur-hq' && currentSegmentationMask) {
-                if (typeof currentSegmentationMask.getAsFloat32Array !== 'function') {
-                    ctxToDraw.filter = colorAdjustments;
-                    ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-                    ctxToDraw.filter = 'none';
-                    return;
-                }
+    // --- 1. HQ BLUR LOGIC ---
+    if (activeEffect === 'bg-blur-hq' && currentSegmentationMask) {
+        if (typeof currentSegmentationMask.getAsFloat32Array !== 'function') {
+            ctxToDraw.filter = colorAdjustments;
+            ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+            ctxToDraw.filter = 'none';
+            return;
+        }
 
-                const mask = currentSegmentationMask;
-                const maskData = mask.getAsFloat32Array();
-                const width = mask.width;
-                const height = mask.height;
+        const mask = currentSegmentationMask;
+        const maskData = mask.getAsFloat32Array();
+        const width = mask.width;
+        const height = mask.height;
 
-                // STEP 1: Draw Background
-                ctxToDraw.save();
-                if (bgImageObject) {
-                    const bgRatio = bgImageObject.width / bgImageObject.height;
-                    const canvasRatio = drawW / drawH;
-                    let bw, bh, bx, by;
-                    if (bgRatio > canvasRatio) {
-                        bh = drawH; bw = bh * bgRatio;
-                        bx = drawX + (drawW - bw) / 2; by = drawY;
-                    } else {
-                        bw = drawW; bh = bw / bgRatio;
-                        bx = drawX; by = drawY + (drawH - bh) / 2;
-                    }
-                    let filterStr = colorAdjustments;
-                    if (S.bgBlurWithImg > 0) filterStr += ` blur(${S.bgBlurWithImg}px)`;
-                    ctxToDraw.filter = filterStr;
-                    ctxToDraw.drawImage(bgImageObject, bx, by, bw, bh);
-                } else {
-                    ctxToDraw.filter = `blur(${Math.max(1, S.bgBlurNoImg)}px) ${colorAdjustments}`;
-                    ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-                }
-                ctxToDraw.restore();
-
-                // STEP 2: Compute and draw Foreground Mask
-                hqFgCanvas.width = width;
-                hqFgCanvas.height = height;
-
-                // Apply Color Filters directly to the extracted subject!
-                hqFgCtx.save();
-                hqFgCtx.filter = colorAdjustments;
-                hqFgCtx.drawImage(videoEl, 0, 0, width, height);
-                hqFgCtx.restore();
-
-                const fgImgData = hqFgCtx.getImageData(0, 0, width, height);
-                const pixels = fgImgData.data;
-
-                for (let i = 0; i < maskData.length; i++) {
-                    if (maskData[i] > 0.4) {
-                        pixels[i * 4 + 3] = 0;
-                    }
-                }
-
-                hqFgCtx.putImageData(fgImgData, 0, 0);
-                ctxToDraw.drawImage(hqFgCanvas, drawX, drawY, drawW, drawH);
-                return;
-            }
-
-            // --- EXISTING STANDARD BLUR LOGIC ---
-            if (activeEffect === 'bg-blur' && currentSegmentationMask) {
-                if (segCanvas.width !== videoEl.videoWidth) {
-                    segCanvas.width = videoEl.videoWidth;
-                    segCanvas.height = videoEl.videoHeight;
-                }
-
-                if (bgImageObject) {
-                    const bgTempCanvas = document.createElement('canvas');
-                    bgTempCanvas.width = segCanvas.width;
-                    bgTempCanvas.height = segCanvas.height;
-                    const bgTempCtx = bgTempCanvas.getContext('2d');
-
-                    const bgRatio = bgImageObject.width / bgImageObject.height;
-                    const canvasRatio = segCanvas.width / segCanvas.height;
-                    let bw, bh, bx, by;
-                    if (bgRatio > canvasRatio) {
-                        bh = segCanvas.height; bw = bh * bgRatio;
-                        bx = (segCanvas.width - bw) / 2; by = 0;
-                    } else {
-                        bw = segCanvas.width; bh = bw / bgRatio;
-                        bx = 0; by = (segCanvas.height - bh) / 2;
-                    }
-                    bgTempCtx.drawImage(bgImageObject, bx, by, bw, bh);
-
-                    ctxToDraw.save();
-                    let filterStr = colorAdjustments;
-                    if (S.bgBlurWithImg > 0) {
-                        filterStr += ` blur(${S.bgBlurWithImg}px)`;
-                    }
-                    ctxToDraw.filter = filterStr;
-                    ctxToDraw.drawImage(bgTempCanvas, drawX, drawY, drawW, drawH);
-                    ctxToDraw.restore();
-                } else {
-                    ctxToDraw.save();
-                    ctxToDraw.filter = `blur(${S.bgBlurNoImg}px) ${colorAdjustments}`;
-                    ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-                    ctxToDraw.restore();
-                }
-
-                segCtx.save();
-                segCtx.clearRect(0, 0, segCanvas.width, segCanvas.height);
-
-                const blurAmt = Math.max(1, S.edgeBlur);
-                const brightnessVal = 1 + (S.edgeTrim / 50);
-                const contrastVal = 1 + (S.edgeHardness * 0.2);
-
-                segCtx.filter = `blur(${blurAmt}px) brightness(${brightnessVal}) contrast(${contrastVal})`;
-
-                if (!window.hqScratchCanvas) {
-                    window.hqScratchCanvas = document.createElement('canvas');
-                    window.hqScratchCanvas.width = 256;
-                    window.hqScratchCanvas.height = 256;
-                    window.hqScratchCtx = window.hqScratchCanvas.getContext('2d');
-                }
-
-                if (currentSegmentationMask instanceof Uint8Array) {
-                    const scratchCtx = window.hqScratchCtx;
-                    const maskImgData = scratchCtx.createImageData(256, 256);
-                    const data = maskImgData.data;
-
-                    for (let i = 0; i < currentSegmentationMask.length; i++) {
-                        const classLabel = currentSegmentationMask[i];
-                        const idx = i * 4;
-                        if (classLabel > 0) {
-                            data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
-                        } else {
-                            data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 0;
-                        }
-                    }
-                    scratchCtx.putImageData(maskImgData, 0, 0);
-                    segCtx.drawImage(window.hqScratchCanvas, 0, 0, segCanvas.width, segCanvas.height);
-                } else if (currentSegmentationMask) {
-                    segCtx.drawImage(currentSegmentationMask, 0, 0, segCanvas.width, segCanvas.height);
-                }
-
-                segCtx.filter = 'none';
-                segCtx.globalCompositeOperation = 'source-in';
-
-                const sw = segCanvas.width;
-                const sh = segCanvas.height;
-                segCtx.translate(sw / 2, sh / 2);
-                segCtx.scale(S.subjectScale, S.subjectScale);
-                segCtx.translate(-sw / 2 + S.subjectPanX, -sh / 2 + S.subjectPanY);
-
-                // Apply Color Filters directly to the extracted subject!
-                segCtx.filter = colorAdjustments;
-                segCtx.drawImage(videoEl, 0, 0);
-
-                segCtx.restore();
-                ctxToDraw.drawImage(segCanvas, drawX, drawY, drawW, drawH);
+        // STEP 1: Draw Background
+        ctxToDraw.save();
+        if (bgImageObject) {
+            const bgRatio = bgImageObject.width / bgImageObject.height;
+            const canvasRatio = drawW / drawH;
+            let bw, bh, bx, by;
+            if (bgRatio > canvasRatio) {
+                bh = drawH; bw = bh * bgRatio;
+                bx = drawX + (drawW - bw) / 2; by = drawY;
             } else {
-                // NORMAL DRAWING (No Background Replacements)
-                let finalFilter = colorAdjustments;
-                if (activeEffect !== 'none' && activeEffect !== 'bg-blur') {
-                    finalFilter += ` ${activeEffect}`; // Stack grayscale/sepia on top if selected
-                }
-                ctxToDraw.filter = finalFilter;
-                ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-                ctxToDraw.filter = 'none'; // Clear filter for next frame
+                bw = drawW; bh = bw / bgRatio;
+                bx = drawX; by = drawY + (drawH - bh) / 2;
             }
-            // Apply Edge Vignette Overlay
-            if (S.useVignette) {
-                ctxToDraw.save();
-                // Create a radial gradient from the center to the edges
-                const gradient = ctxToDraw.createRadialGradient(
-                    drawX + drawW / 2, drawY + drawH / 2, drawW * 0.35, // Inner transparent circle
-                    drawX + drawW / 2, drawY + drawH / 2, drawW * 0.75  // Outer dark boundary
-                );
-                gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');      // Transparent center
-                gradient.addColorStop(1, 'rgba(0, 0, 0, 0.65)');   // Dark edges
-                
-                ctxToDraw.fillStyle = gradient;
-                ctxToDraw.globalCompositeOperation = 'source-over'; // Blend naturally on top
-                ctxToDraw.fillRect(drawX, drawY, drawW, drawH);
-                ctxToDraw.restore();
+            let filterStr = colorAdjustments;
+            if (S.bgBlurWithImg > 0) filterStr += ` blur(${S.bgBlurWithImg}px)`;
+            ctxToDraw.filter = filterStr;
+            ctxToDraw.drawImage(bgImageObject, bx, by, bw, bh);
+        } else {
+            ctxToDraw.filter = `blur(${Math.max(1, S.bgBlurNoImg)}px) ${colorAdjustments}`;
+            ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+        }
+        ctxToDraw.restore();
+
+        // STEP 2: Compute and draw Foreground Mask
+        hqFgCanvas.width = width;
+        hqFgCanvas.height = height;
+
+        hqFgCtx.save();
+        hqFgCtx.filter = colorAdjustments;
+        hqFgCtx.drawImage(videoEl, 0, 0, width, height);
+        
+        // NATIVE SHADOW LIFT
+        if (S.camShadows && S.camShadows > 0) {
+            hqFgCtx.globalCompositeOperation = 'screen';
+            hqFgCtx.globalAlpha = (S.camShadows / 100) * 0.4; // 40% max opacity
+            hqFgCtx.drawImage(videoEl, 0, 0, width, height);
+        }
+        hqFgCtx.restore();
+
+        const fgImgData = hqFgCtx.getImageData(0, 0, width, height);
+        const pixels = fgImgData.data;
+
+        for (let i = 0; i < maskData.length; i++) {
+            if (maskData[i] > 0.4) {
+                pixels[i * 4 + 3] = 0;
             }
         }
+
+        hqFgCtx.putImageData(fgImgData, 0, 0);
+        ctxToDraw.drawImage(hqFgCanvas, drawX, drawY, drawW, drawH);
+        return;
+    }
+
+    // --- 2. STANDARD BLUR LOGIC ---
+    if (activeEffect === 'bg-blur' && currentSegmentationMask) {
+        if (segCanvas.width !== videoEl.videoWidth) {
+            segCanvas.width = videoEl.videoWidth;
+            segCanvas.height = videoEl.videoHeight;
+        }
+
+        if (bgImageObject) {
+            const bgTempCanvas = document.createElement('canvas');
+            bgTempCanvas.width = segCanvas.width;
+            bgTempCanvas.height = segCanvas.height;
+            const bgTempCtx = bgTempCanvas.getContext('2d');
+
+            const bgRatio = bgImageObject.width / bgImageObject.height;
+            const canvasRatio = segCanvas.width / segCanvas.height;
+            let bw, bh, bx, by;
+            if (bgRatio > canvasRatio) {
+                bh = segCanvas.height; bw = bh * bgRatio;
+                bx = (segCanvas.width - bw) / 2; by = 0;
+            } else {
+                bw = segCanvas.width; bh = bw / bgRatio;
+                bx = 0; by = (segCanvas.height - bh) / 2;
+            }
+            bgTempCtx.drawImage(bgImageObject, bx, by, bw, bh);
+
+            ctxToDraw.save();
+            let filterStr = colorAdjustments;
+            if (S.bgBlurWithImg > 0) {
+                filterStr += ` blur(${S.bgBlurWithImg}px)`;
+            }
+            ctxToDraw.filter = filterStr;
+            ctxToDraw.drawImage(bgTempCanvas, drawX, drawY, drawW, drawH);
+            ctxToDraw.restore();
+        } else {
+            ctxToDraw.save();
+            ctxToDraw.filter = `blur(${S.bgBlurNoImg}px) ${colorAdjustments}`;
+            ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+            ctxToDraw.restore();
+        }
+
+        segCtx.save();
+        segCtx.clearRect(0, 0, segCanvas.width, segCanvas.height);
+
+        const blurAmt = Math.max(1, S.edgeBlur);
+        const brightnessVal = 1 + (S.edgeTrim / 50);
+        const contrastVal = 1 + (S.edgeHardness * 0.2);
+
+        segCtx.filter = `blur(${blurAmt}px) brightness(${brightnessVal}) contrast(${contrastVal})`;
+
+        if (!window.hqScratchCanvas) {
+            window.hqScratchCanvas = document.createElement('canvas');
+            window.hqScratchCanvas.width = 256;
+            window.hqScratchCanvas.height = 256;
+            window.hqScratchCtx = window.hqScratchCanvas.getContext('2d');
+        }
+
+        if (currentSegmentationMask instanceof Uint8Array) {
+            const scratchCtx = window.hqScratchCtx;
+            const maskImgData = scratchCtx.createImageData(256, 256);
+            const data = maskImgData.data;
+
+            for (let i = 0; i < currentSegmentationMask.length; i++) {
+                const classLabel = currentSegmentationMask[i];
+                const idx = i * 4;
+                if (classLabel > 0) {
+                    data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
+                } else {
+                    data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 0;
+                }
+            }
+            scratchCtx.putImageData(maskImgData, 0, 0);
+            segCtx.drawImage(window.hqScratchCanvas, 0, 0, segCanvas.width, segCanvas.height);
+        } else if (currentSegmentationMask) {
+            segCtx.drawImage(currentSegmentationMask, 0, 0, segCanvas.width, segCanvas.height);
+        }
+
+        segCtx.filter = 'none';
+        segCtx.globalCompositeOperation = 'source-in';
+
+        const sw = segCanvas.width;
+        const sh = segCanvas.height;
+        segCtx.translate(sw / 2, sh / 2);
+        segCtx.scale(S.subjectScale, S.subjectScale);
+        segCtx.translate(-sw / 2 + S.subjectPanX, -sh / 2 + S.subjectPanY);
+
+        segCtx.filter = colorAdjustments;
+        segCtx.drawImage(videoEl, 0, 0);
+        
+        // NATIVE SHADOW LIFT
+        if (S.camShadows && S.camShadows > 0) {
+            segCtx.globalCompositeOperation = 'screen';
+            segCtx.globalAlpha = (S.camShadows / 100) * 0.4;
+            segCtx.drawImage(videoEl, 0, 0);
+        }
+
+        segCtx.restore();
+        ctxToDraw.drawImage(segCanvas, drawX, drawY, drawW, drawH);
+    } 
+    // --- 3. NORMAL DRAWING (No Background Replacements) ---
+    else {
+        let finalFilter = colorAdjustments;
+        if (activeEffect !== 'none' && activeEffect !== 'bg-blur' && activeEffect !== 'bg-blur-hq') {
+            finalFilter += ` ${activeEffect}`; 
+        }
+        
+        ctxToDraw.save();
+        ctxToDraw.filter = finalFilter;
+        ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+        
+        // NATIVE SHADOW LIFT
+        if (S.camShadows && S.camShadows > 0) {
+            ctxToDraw.globalCompositeOperation = 'screen';
+            ctxToDraw.globalAlpha = (S.camShadows / 100) * 0.4;
+            ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+        }
+        
+        ctxToDraw.restore();
+        ctxToDraw.filter = 'none'; 
+    }
+
+    // Apply Edge Vignette Overlay
+    if (S.useVignette) {
+        ctxToDraw.save();
+        const gradient = ctxToDraw.createRadialGradient(
+            drawX + drawW / 2, drawY + drawH / 2, drawW * 0.35, 
+            drawX + drawW / 2, drawY + drawH / 2, drawW * 0.75  
+        );
+        gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');      
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.65)');   
+        
+        ctxToDraw.fillStyle = gradient;
+        ctxToDraw.globalCompositeOperation = 'source-over'; 
+        ctxToDraw.fillRect(drawX, drawY, drawW, drawH);
+        ctxToDraw.restore();
+    }
+}
 
         function drawSolidBoard(ctxToDraw) {
             ctxToDraw.save();
@@ -3715,6 +3782,12 @@
             loadSettings();
             resizeCanvases();
 
+            loadDirectoryHandle().then(handle => {
+                if (handle) {
+                    document.getElementById('save-dir-display').textContent = handle.name;
+                }
+            });
+
             getDevices().then(() => {
                 updateAudioStream();
 
@@ -3739,6 +3812,7 @@
                 // Fire the stream initializer
                 updateCameraStream();
             });
+
 
             pushHistory();
             syncColorPickerRing();
@@ -4202,81 +4276,170 @@
             timerDisplay.textContent = `${mins}:${secs}`;
         }
 
-        async function startRecording() {
-    if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+        // --- 1. IndexedDB Helper for Directory Handles ---
+        let targetDirectoryHandle = null;
 
-    if (S.useCountdown) {
-        const overlay = document.getElementById('countdown-overlay');
-        const num = document.getElementById('countdown-number');
-        overlay.classList.remove('hidden');
-        startBtn.disabled = true;
+        const dbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open('StudioProDB', 1);
+            request.onupgradeneeded = (e) => e.target.result.createObjectStore('handles');
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
 
-        for (let i = 3; i > 0; i--) {
-            num.textContent = i; num.style.transform = 'scale(0.5)'; num.style.opacity = '0';
-            setTimeout(() => { num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; num.style.transform = 'scale(1)'; num.style.opacity = '1'; }, 50);
-            if (audioContext && audioContext.state === 'running') {
-                const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
-                osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value = 800;
-                gain.gain.setValueAtTime(0.05, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-                osc.start(); osc.stop(audioContext.currentTime + 0.1);
-            }
-            await new Promise(r => setTimeout(r, 1000));
+        async function saveDirectoryHandle(handle) {
+            const db = await dbPromise;
+            db.transaction('handles', 'readwrite').objectStore('handles').put(handle, 'saveFolder');
+            targetDirectoryHandle = handle;
         }
-        overlay.classList.add('hidden'); startBtn.disabled = false;
-    }
 
-    recordedChunks = [];
-    const targetFps = 30;
+        async function loadDirectoryHandle() {
+            const db = await dbPromise;
+            return new Promise((resolve) => {
+                const request = db.transaction('handles', 'readonly').objectStore('handles').get('saveFolder');
+                request.onsuccess = () => {
+                    targetDirectoryHandle = request.result || null;
+                    resolve(targetDirectoryHandle);
+                };
+            });
+        }
 
-    // FIX 1: Explicitly bundle the video track with an advanced hints constraint map
-    const videoTrack = canvas.captureStream(targetFps).getVideoTracks()[0];
-    if (videoTrack.applyConstraints) {
-        videoTrack.applyConstraints({
-            frameRate: { exact: targetFps }
-        }).catch(e => console.warn("Fixed Frame Constraints bypass warning:", e));
-    }
+        // --- 2. Permission Verifier ---
+        async function verifyPermission(fileHandle, readWrite) {
+            const options = { mode: readWrite ? 'readwrite' : 'read' };
+            // Check if we already have permission
+            if ((await fileHandle.queryPermission(options)) === 'granted') return true;
+            // Request permission if we don't (This triggers the browser popup on reload)
+            if ((await fileHandle.requestPermission(options)) === 'granted') return true;
+            return false;
+        }
 
-    const audioTracks = audioStream.getAudioTracks();
-    const combinedStream = new MediaStream([videoTrack, ...audioTracks]);
+        // --- 3. UI Button Logic ---
+        document.getElementById('choose-dir-btn').addEventListener('click', async () => {
+            try {
+                const directoryHandle = await window.showDirectoryPicker({
+                    id: 'StudioProSaveDir',
+                    mode: 'readwrite'
+                });
+                await saveDirectoryHandle(directoryHandle);
+                document.getElementById('save-dir-display').textContent = directoryHandle.name;
+                showToast(`Output set to: ${directoryHandle.name}`, 'success');
+            } catch (err) {
+                if (err.name !== 'AbortError') console.error(err);
+            }
+        });
 
-    let mimeType = 'video/mp4'; let fileExtension = 'mp4';
-    if (S.format === 'mp4') {
-        if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.4d002a, mp4a.40.2"')) mimeType = 'video/mp4; codecs="avc1.4d002a, mp4a.40.2"';
-        else if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
-        else { fileExtension = 'webm'; mimeType = 'video/webm; codecs=vp9'; }
-    } else {
-        fileExtension = 'webm';
-        if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
-        else mimeType = 'video/webm';
-    }
+        // Keep track of the active recording multiplexer globally
+        let currentMediaOutput = null;
 
-    // FIX 2: Explicitly pass regular video and audio bitrates into MediaRecorder setup
-    mediaRecorder = new MediaRecorder(combinedStream, { 
-        mimeType,
-        videoBitsPerSecond: 5000000, // 5 Mbps ensures crisp 1080p rendering
-        audioBitsPerSecond: 192000   // 192 kbps studio audio standard
-    });
-    
-    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-    mediaRecorder.onstop = async () => {
-        const blob = new Blob(recordedChunks, { type: mimeType });
-        saveRecordingFile(blob, fileExtension, mimeType);
-        clearInterval(timerInterval); secondsRecorded = 0; updateTimer();
-    };
+        async function startRecording() {
+            // 1. Resume Audio Context if suspended
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
 
-    // FIX 3: Force down short timeslice segments to write healthy indexing headers continuously 
-    mediaRecorder.start(250); 
-    isPaused = false;
-    isRecording = true;
+            // 2. Countdown Logic (Kept exactly as you designed it)
+            if (S.useCountdown) {
+                const overlay = document.getElementById('countdown-overlay');
+                const num = document.getElementById('countdown-number');
+                overlay.classList.remove('hidden');
+                startBtn.disabled = true;
 
-    startBtn.classList.add('hidden');
-    pauseBtn.classList.remove('hidden'); pauseBtn.classList.add('flex'); pauseBtn.disabled = false;
-    stopBtn.classList.remove('hidden'); stopBtn.classList.add('flex'); stopBtn.disabled = false;
-    recordingIndicator.classList.remove('hidden'); recordingIndicator.classList.add('flex');
+                for (let i = 3; i > 0; i--) {
+                    num.textContent = i; num.style.transform = 'scale(0.5)'; num.style.opacity = '0';
+                    setTimeout(() => { num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; num.style.transform = 'scale(1)'; num.style.opacity = '1'; }, 50);
+                    if (audioContext && audioContext.state === 'running') {
+                        const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
+                        osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value = 800;
+                        gain.gain.setValueAtTime(0.05, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                        osc.start(); osc.stop(audioContext.currentTime + 0.1);
+                    }
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+                overlay.classList.add('hidden'); startBtn.disabled = false;
+            }
 
-    timerInterval = setInterval(() => { if (!isPaused) { secondsRecorded++; updateTimer(); } }, 1000);
-    showToast('Recording..');
-}
+            const targetFps = 30;
+
+            // Explicitly bundle the video track with an advanced hints constraint map
+            const videoTrack = canvas.captureStream(targetFps).getVideoTracks()[0];
+            if (videoTrack.applyConstraints) {
+                videoTrack.applyConstraints({
+                    frameRate: { exact: targetFps }
+                }).catch(e => console.warn("Fixed Frame Constraints bypass warning:", e));
+            }
+
+            // Capture the audio track from the hardware stream
+            const audioTrack = audioStream ? audioStream.getAudioTracks()[0] : null;
+
+            try {
+                // 3. Ask user where to save the file BEFORE recording starts
+                // (This allows Mediabunny to stream directly to their disk, saving RAM)
+                let writableStream;
+                const filename = `StudioPro_${new Date().toISOString().replace(/[:.]/g, '-')}.mp4`;
+
+                if (targetDirectoryHandle) {
+                    // Check if we have write permission (will prompt user once per session)
+                    const hasPermission = await verifyPermission(targetDirectoryHandle, true);
+                    if (hasPermission) {
+                        // Create the file directly in the saved folder silently!
+                        const fileHandle = await targetDirectoryHandle.getFileHandle(filename, { create: true });
+                        writableStream = await fileHandle.createWritable();
+                    } else {
+                        throw new Error("PermissionDenied");
+                    }
+                } else {
+                    // Fallback: If no folder is set, ask them where to save it
+                    const handle = await window.showSaveFilePicker({
+                        suggestedName: filename,
+                        types: [{ description: 'MP4 Video', accept: { 'video/mp4': ['.mp4'] } }]
+                    });
+                    writableStream = await handle.createWritable();
+                }
+
+                // 4. Initialize the Mediabunny Output Multiplexer
+                currentMediaOutput = new window.MB.Output({
+                    // 'reserve' ensures the MOOV atom is placed at the very front for DaVinci Resolve!
+                    format: new window.MB.Mp4OutputFormat(),
+                    target: new window.MB.StreamTarget(writableStream)
+                });
+
+                // 5. Attach the Canvas Video Track (avc / H.264)
+                const videoSource = new window.MB.MediaStreamVideoTrackSource(videoTrack, {
+                    codec: 'avc',
+                    bitrate: 5_000_000 // 5 Mbps ensures crisp 1080p rendering
+                });
+                currentMediaOutput.addVideoTrack(videoSource);
+
+                // 6. Attach the Microphone Audio Track (aac)
+                if (audioTrack && !isMuted) {
+                    const audioSource = new window.MB.MediaStreamAudioTrackSource(audioTrack, {
+                        codec: 'aac',
+                        bitrate: 192_000 // 192 kbps studio audio standard
+                    });
+                    currentMediaOutput.addAudioTrack(audioSource);
+                }
+
+                // 7. Start the pipeline!
+                await currentMediaOutput.start();
+
+                isPaused = false;
+                isRecording = true;
+
+                // 8. Update UI Elements
+                startBtn.classList.add('hidden');
+                pauseBtn.classList.remove('hidden'); pauseBtn.classList.add('flex'); pauseBtn.disabled = false;
+                stopBtn.classList.remove('hidden'); stopBtn.classList.add('flex'); stopBtn.disabled = false;
+                recordingIndicator.classList.remove('hidden'); recordingIndicator.classList.add('flex');
+
+                // Start Recording Timer
+                timerInterval = setInterval(() => { if (!isPaused) { secondsRecorded++; updateTimer(); } }, 1000);
+                showToast('Recording directly to disk...', 'success');
+
+            } catch (err) {
+                if (err.name !== 'AbortError') { // Ignore if the user just canceled the save dialog window
+                    showToast('Failed to start recording pipeline.', 'error');
+                    console.error("Mediabunny Initialization Error:", err);
+                }
+            }
+        }
 
         async function saveRecordingFile(blob, ext, mimeType) {
             const filename = `StudioPro_${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`;
@@ -4302,9 +4465,13 @@
         resSelect.addEventListener('change', updateCameraStream);
         hzSelect.addEventListener('change', updateCameraStream);
         document.getElementById('mic-volume').addEventListener('input', (e) => {
-            // Optional: If you want to add a text indicator next to the microphone icon label later, 
-            // you can target it here. For now, it ensures the gain values update instantly.
-            if (masterGain) masterGain.gain.value = e.target.value / 100;
+            const val = e.target.value;
+            // Update the visual number indicator
+            document.getElementById('val-mic-volume').textContent = `${val}%`;
+
+            // Update the actual audio gain hardware node
+            if (masterGain) masterGain.gain.value = val / 100;
+
             saveSettings();
         });
 
@@ -4328,29 +4495,18 @@
             S.camPanY = val;
             saveSettings();
         });
-        function updateShadowFilterDOM(value) {
-            // 0 = no change (gamma 1). 100 = max shadow lift (gamma ~0.45)
-            const exponent = 1.0 - (value / 100) * 0.55;
-            const transfer = document.getElementById('shadow-transfer');
-            if (transfer) {
-                transfer.innerHTML = `
-                    <feFuncR type="gamma" amplitude="1" exponent="${exponent}" offset="0"></feFuncR>
-                    <feFuncG type="gamma" amplitude="1" exponent="${exponent}" offset="0"></feFuncG>
-                    <feFuncB type="gamma" amplitude="1" exponent="${exponent}" offset="0"></feFuncB>
-                `;
-            }
-        }
+        
         // Color & Shadow Adjustments Event Listeners
         ['brightness', 'contrast', 'saturation', 'shadows'].forEach(setting => {
             document.getElementById(`cam-${setting}`).addEventListener('input', (e) => {
                 const val = parseInt(e.target.value);
                 document.getElementById(`val-${setting}`).textContent = `${val}%`;
                 S[`cam${setting.charAt(0).toUpperCase() + setting.slice(1)}`] = val;
-                
-                // Update SVG DOM live without lagging the canvas
-                if (setting === 'shadows') {
-                    updateShadowFilterDOM(val);
-                }
+
+                // Use the new RAM-based filter generator
+                // if (setting === 'shadows') {
+                //     updateShadowFilterString(val);
+                // }
                 saveSettings();
             });
         });
@@ -4365,8 +4521,27 @@
             S.camShadows = 0;
             document.getElementById('cam-shadows').value = 0;
             document.getElementById('val-shadows').textContent = `0%`;
-            updateShadowFilterDOM(0);
-            
+
+            // Use the new helper here too
+            // updateShadowFilterString(0);
+
+            saveSettings();
+        });
+
+        document.getElementById('cam-reset-transform').addEventListener('click', () => {
+            S.camZoom = 1;
+            S.camPanX = 0;
+            S.camPanY = 0;
+
+            document.getElementById('cam-zoom').value = 1;
+            document.getElementById('val-zoom').textContent = `1.0x`;
+
+            document.getElementById('cam-pan-x').value = 0;
+            document.getElementById('val-panx').textContent = `0%`;
+
+            document.getElementById('cam-pan-y').value = 0;
+            document.getElementById('val-pany').textContent = `0%`;
+
             saveSettings();
         });
         document.getElementById('screen-share-btn').addEventListener('click', toggleScreenShare);
@@ -4651,7 +4826,7 @@
                 currentBoardPage--;
                 syncBoardPageUI();
             }
-        }        
+        }
 
         // Bind Page Cluster Click Interceptors
         document.getElementById('board-prev-btn').addEventListener('click', (e) => {
@@ -4709,14 +4884,27 @@
                 recordingIndicator.querySelector('.w-3').className = 'w-3 h-3 bg-red-500 rounded-full pulse-red';
             }
         });
-        stopBtn.addEventListener('click', () => {
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
+        stopBtn.addEventListener('click', async () => {
+            if (currentMediaOutput) {
+                stopBtn.disabled = true;
+                stopBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+
+                await currentMediaOutput.finalize();
+                currentMediaOutput = null;
+
                 startBtn.classList.remove('hidden');
                 pauseBtn.classList.add('hidden'); pauseBtn.classList.remove('flex');
                 stopBtn.classList.add('hidden'); stopBtn.classList.remove('flex');
+                stopBtn.innerHTML = '<div class="w-3 h-3 bg-white rounded-sm"></div><span class="hidden md:inline">Stop</span>';
+
                 recordingIndicator.classList.add('hidden'); recordingIndicator.classList.remove('flex');
                 isRecording = false;
+
+                clearInterval(timerInterval);
+                secondsRecorded = 0;
+                updateTimer();
+
+                showToast('Saved.', 'success');
             }
         });
 
