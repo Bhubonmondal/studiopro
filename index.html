@@ -4203,66 +4203,80 @@
         }
 
         async function startRecording() {
-            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+    if (audioContext && audioContext.state === 'suspended') audioContext.resume();
 
-            if (S.useCountdown) {
-                const overlay = document.getElementById('countdown-overlay');
-                const num = document.getElementById('countdown-number');
-                overlay.classList.remove('hidden');
-                startBtn.disabled = true;
+    if (S.useCountdown) {
+        const overlay = document.getElementById('countdown-overlay');
+        const num = document.getElementById('countdown-number');
+        overlay.classList.remove('hidden');
+        startBtn.disabled = true;
 
-                for (let i = 3; i > 0; i--) {
-                    num.textContent = i; num.style.transform = 'scale(0.5)'; num.style.opacity = '0';
-                    setTimeout(() => { num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; num.style.transform = 'scale(1)'; num.style.opacity = '1'; }, 50);
-                    if (audioContext && audioContext.state === 'running') {
-                        const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
-                        osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value = 800;
-                        gain.gain.setValueAtTime(0.05, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-                        osc.start(); osc.stop(audioContext.currentTime + 0.1);
-                    }
-                    await new Promise(r => setTimeout(r, 1000));
-                }
-                overlay.classList.add('hidden'); startBtn.disabled = false;
+        for (let i = 3; i > 0; i--) {
+            num.textContent = i; num.style.transform = 'scale(0.5)'; num.style.opacity = '0';
+            setTimeout(() => { num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; num.style.transform = 'scale(1)'; num.style.opacity = '1'; }, 50);
+            if (audioContext && audioContext.state === 'running') {
+                const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
+                osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value = 800;
+                gain.gain.setValueAtTime(0.05, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                osc.start(); osc.stop(audioContext.currentTime + 0.1);
             }
-
-            recordedChunks = [];
-            // const fps = parseInt(fpsSelect.value || 60);
-            const fps = 30;
-            const canvasStream = canvas.captureStream(fps);
-            const audioTracks = audioStream.getAudioTracks();
-            const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioTracks]);
-
-            let mimeType = 'video/mp4'; let fileExtension = 'mp4';
-            if (S.format === 'mp4') {
-                if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.4d002a, mp4a.40.2"')) mimeType = 'video/mp4; codecs="avc1.4d002a, mp4a.40.2"';
-                else if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
-                else { fileExtension = 'webm'; mimeType = 'video/webm; codecs=vp9'; }
-            } else {
-                fileExtension = 'webm';
-                if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
-                else mimeType = 'video/webm';
-            }
-
-            mediaRecorder = new MediaRecorder(combinedStream, { mimeType });
-            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-            mediaRecorder.onstop = async () => {
-                const blob = new Blob(recordedChunks, { type: mimeType });
-                saveRecordingFile(blob, fileExtension, mimeType);
-                clearInterval(timerInterval); secondsRecorded = 0; updateTimer();
-            };
-
-            mediaRecorder.start(1000);
-            isPaused = false;
-            isRecording = true;
-
-            startBtn.classList.add('hidden');
-            pauseBtn.classList.remove('hidden'); pauseBtn.classList.add('flex'); pauseBtn.disabled = false;
-            stopBtn.classList.remove('hidden'); stopBtn.classList.add('flex'); stopBtn.disabled = false;
-            recordingIndicator.classList.remove('hidden'); recordingIndicator.classList.add('flex');
-
-            timerInterval = setInterval(() => { if (!isPaused) { secondsRecorded++; updateTimer(); } }, 1000);
-            showToast('Recording..');
+            await new Promise(r => setTimeout(r, 1000));
         }
+        overlay.classList.add('hidden'); startBtn.disabled = false;
+    }
+
+    recordedChunks = [];
+    const targetFps = 30;
+
+    // FIX 1: Explicitly bundle the video track with an advanced hints constraint map
+    const videoTrack = canvas.captureStream(targetFps).getVideoTracks()[0];
+    if (videoTrack.applyConstraints) {
+        videoTrack.applyConstraints({
+            frameRate: { exact: targetFps }
+        }).catch(e => console.warn("Fixed Frame Constraints bypass warning:", e));
+    }
+
+    const audioTracks = audioStream.getAudioTracks();
+    const combinedStream = new MediaStream([videoTrack, ...audioTracks]);
+
+    let mimeType = 'video/mp4'; let fileExtension = 'mp4';
+    if (S.format === 'mp4') {
+        if (MediaRecorder.isTypeSupported('video/mp4; codecs="avc1.4d002a, mp4a.40.2"')) mimeType = 'video/mp4; codecs="avc1.4d002a, mp4a.40.2"';
+        else if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
+        else { fileExtension = 'webm'; mimeType = 'video/webm; codecs=vp9'; }
+    } else {
+        fileExtension = 'webm';
+        if (MediaRecorder.isTypeSupported('video/webm; codecs=vp9')) mimeType = 'video/webm; codecs=vp9';
+        else mimeType = 'video/webm';
+    }
+
+    // FIX 2: Explicitly pass regular video and audio bitrates into MediaRecorder setup
+    mediaRecorder = new MediaRecorder(combinedStream, { 
+        mimeType,
+        videoBitsPerSecond: 5000000, // 5 Mbps ensures crisp 1080p rendering
+        audioBitsPerSecond: 192000   // 192 kbps studio audio standard
+    });
+    
+    mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+        const blob = new Blob(recordedChunks, { type: mimeType });
+        saveRecordingFile(blob, fileExtension, mimeType);
+        clearInterval(timerInterval); secondsRecorded = 0; updateTimer();
+    };
+
+    // FIX 3: Force down short timeslice segments to write healthy indexing headers continuously 
+    mediaRecorder.start(250); 
+    isPaused = false;
+    isRecording = true;
+
+    startBtn.classList.add('hidden');
+    pauseBtn.classList.remove('hidden'); pauseBtn.classList.add('flex'); pauseBtn.disabled = false;
+    stopBtn.classList.remove('hidden'); stopBtn.classList.add('flex'); stopBtn.disabled = false;
+    recordingIndicator.classList.remove('hidden'); recordingIndicator.classList.add('flex');
+
+    timerInterval = setInterval(() => { if (!isPaused) { secondsRecorded++; updateTimer(); } }, 1000);
+    showToast('Recording..');
+}
 
         async function saveRecordingFile(blob, ext, mimeType) {
             const filename = `StudioPro_${new Date().toISOString().replace(/[:.]/g, '-')}.${ext}`;
