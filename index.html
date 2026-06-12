@@ -1431,7 +1431,7 @@
             updateBackgroundLabels();
             saveSettings();
 
-            showToast('Camera settings restored to default', 'info');
+            showToast('Blur settings restored to default', 'info');
         });
 
         // Consolidated High-Performance Keyboard Router & Shortcuts
@@ -2312,7 +2312,7 @@
             isSegmenterInitialized = true; // Mark as completely ready!
 
             document.getElementById('toast-container').innerHTML = '';
-            showToast('Selfie model initialized', 'success');
+            showToast('Blur model initialized', 'success');
         }
 
         // Offline High-Quality Multi-Class Engine Setup
@@ -4322,7 +4322,7 @@
                 });
                 await saveDirectoryHandle(directoryHandle);
                 document.getElementById('save-dir-display').textContent = directoryHandle.name;
-                showToast(`Output set to: ${directoryHandle.name}`, 'success');
+                showToast(`Default save location: ${directoryHandle.name}`, 'success');
             } catch (err) {
                 if (err.name !== 'AbortError') console.error(err);
             }
@@ -4431,7 +4431,7 @@
 
                 // Start Recording Timer
                 timerInterval = setInterval(() => { if (!isPaused) { secondsRecorded++; updateTimer(); } }, 1000);
-                showToast('Recording directly to disk...', 'success');
+                // showToast('Recording started...', 'success');
 
             } catch (err) {
                 if (err.name !== 'AbortError') { // Ignore if the user just canceled the save dialog window
