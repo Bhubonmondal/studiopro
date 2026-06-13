@@ -402,7 +402,8 @@
                             <div class="space-y-1">
                                 <label class="text-[10px] font-medium text-slate-400 flex justify-between">
                                     <span class="flex items-center gap-1.5"><i
-                                            class="fa-solid fa-magnifying-glass text-indigo-400"></i>Camera Zoom / Crop</span>
+                                            class="fa-solid fa-magnifying-glass text-indigo-400"></i>Camera Zoom /
+                                        Crop</span>
                                     <span id="val-zoom" class="font-mono">1.0x</span>
                                 </label>
                                 <input type="range" id="cam-zoom" min="1" max="3" step="0.1" value="1" class="w-full">
@@ -411,7 +412,7 @@
                                 <label class="text-[10px] font-medium text-slate-400 flex justify-between">
                                     <span class="flex items-center gap-1.5"><i
                                             class="fa-solid fa-arrows-left-right text-indigo-400"></i> Camera Move
-                                        (Left/Right)</span>
+                                        Left/Right</span>
                                     <span id="val-panx" class="font-mono">0%</span>
                                 </label>
                                 <input type="range" id="cam-pan-x" min="-100" max="100" value="0" class="w-full">
@@ -1464,176 +1465,24 @@
                     return;
                 }
             }
-
-            // 2. Modifier Shortcuts: Alt keys
-            if (e.altKey) {
-                // Alt + B : Swap whiteboard backgrounds
-                // if (key === 'b') {
-                //     e.preventDefault();
-                //     const nextBg = S.wbBg === 'black' ? 'white' : 'black';
-                //     S.wbBg = nextBg;
-                //     wbBgSelect.value = nextBg;
-                //     isPdfActive = false; // exit PDF presentation mode
-                //     if (S.wbTool === 'pointer') {
-                //         S.wbTool = 'pen1';
-                //         isWhiteboardActive = true;
-                //     }
-                //     syncToolButtonUI();
-                //     saveSettings();
-                //     updateCursor();
-                //     needsWbRedraw = true;
-                //     updateScrollbarVisibility();
-                //     showToast(`Solid Board Background: ${nextBg.toUpperCase()}`, 'success');
-                //     return;
-                // }
-                // Alt + R : Toggle Reels Mode (9:16 layout)
-                // if (key === 'r') {
-                //     e.preventDefault();
-                //     S.reelsMode = !S.reelsMode;
-                //     updateToggleUI(document.getElementById('reels-toggle-knob'), document.getElementById('reels-toggle-track'), S.reelsMode);
-                //     saveSettings();
-                //     resizeCanvases();
-                //     needsWbRedraw = true;
-                //     showToast(S.reelsMode ? "Reels Mode (9:16) Active" : "Widescreen Layout (16:9) Active", "info");
-                //     return;
-                // }
-                // Alt + G : Toggle Grid Overlay
-                // if (key === 'g') {
-                //     e.preventDefault();
-                //     S.showGrid = !S.showGrid;
-                //     toggleBtnColor('grid-btn', S.showGrid);
-                //     saveSettings();
-                //     showToast(S.showGrid ? "Rule of Thirds Grid Active" : "Grid Overlay Hidden", "info");
-                //     return;
-                // }
-                // Alt + M : Toggle Camera Mirror
-                // if (key === 'm') {
-                //     e.preventDefault();
-                //     S.isMirrored = !S.isMirrored;
-                //     toggleBtnColor('mirror-btn', S.isMirrored);
-                //     saveSettings();
-                //     showToast(S.isMirrored ? "Camera Feed Mirrored" : "Camera Feed Normal", "info");
-                //     return;
-                // }
-                // Alt + X : Toggle Microphone Mute
-                // if (key === 'x') {
-                //     e.preventDefault();
-                //     isMuted = !isMuted;
-                //     if (audioStream) audioStream.getAudioTracks().forEach(track => track.enabled = !isMuted);
-                //     updateToggleUI(document.getElementById('mute-toggle-knob'), document.getElementById('mute-toggle-track'), isMuted);
-                //     showToast(isMuted ? "Microphone MUTED" : "Microphone LIVE", isMuted ? "error" : "success");
-                //     return;
-                // }
-                // Alt + K : Capture Snapshot
-                // if (key === 'k') {
-                //     e.preventDefault();
-                //     document.getElementById('snapshot-btn').click();
-                //     return;
-                // }
-                // Alt + Q : Close all presentation media
-                // if (key === 'q') {
-                //     e.preventDefault();
-                //     closeAllMedia();
-                //     showToast("Closed all media files", "info");
-                //     return;
-                // }
-                // Alt + C : Clear all active strokes on whiteboard or PDF page
-                // if (key === 'c') {
-                //     e.preventDefault();
-                //     document.getElementById('wb-clear').click();
-                //     showToast("Cleared active drawings", "info");
-                //     return;
-                // }
-                // Alt + F : Switch to Presenter Focus
-                // if (key === 'f') {
-                //     e.preventDefault();
-                //     S.wbTool = 'pointer';
-                //     isWhiteboardActive = false;
-                //     syncToolButtonUI();
-                //     updateCursor();
-                //     saveSettings();
-                //     needsWbRedraw = true;
-                //     updateScrollbarVisibility();
-                //     showToast('Presenter Focus Active', 'info');
-                //     return;
-                // }
-                // Alt + H : Switch to Hand Tool
-                // if (key === 'h') {
-                //     e.preventDefault();
-                //     transitionFromFocus();
-                //     S.wbTool = 'hand';
-                //     isWhiteboardActive = true;
-                //     syncToolButtonUI();
-                //     updateCursor();
-                //     saveSettings();
-                //     needsWbRedraw = true;
-                //     updateScrollbarVisibility();
-                //     showToast('Hand Tool Active', 'info');
-                //     return;
-                // }
-                // Alt + P : Switch to Pen 1
-                // if (key === 'p') {
-                //     e.preventDefault();
-                //     transitionFromFocus();
-                //     S.wbTool = 'pen1';
-                //     isWhiteboardActive = true;
-                //     syncToolButtonUI();
-                //     updateCursor();
-                //     saveSettings();
-                //     needsWbRedraw = true;
-                //     updateScrollbarVisibility();
-                //     showToast('Pen 1 Actived', 'success');
-                //     return;
-                // }
-                // Alt + E : Switch to Pixel Eraser
-                // if (key === 'e') {
-                //     e.preventDefault();
-                //     transitionFromFocus();
-                //     S.wbTool = 'pixel-eraser';
-                //     isWhiteboardActive = true;
-                //     syncToolButtonUI();
-                //     updateCursor();
-                //     saveSettings();
-                //     needsWbRedraw = true;
-                //     showToast('Pixel Eraser Active', 'info');
-                //     return;
-                // }
-                // Alt + S : Switch to Stroke Eraser
-                // if (key === 's') {
-                //     e.preventDefault();
-                //     transitionFromFocus();
-                //     S.wbTool = 'stroke-eraser';
-                //     isWhiteboardActive = true;
-                //     syncToolButtonUI();
-                //     updateCursor();
-                //     saveSettings();
-                //     needsWbRedraw = true;
-                //     showToast('Stroke Eraser Active', 'info');
-                //     return;
-                // }
-                // Alt + Plus / Alt + Minus : Zoom camera feed in and out
-                // if (e.key === '=' || e.key === '+') {
-                //     e.preventDefault();
-                //     let newZoom = Math.min(3.0, S.camZoom + 0.1);
-                //     S.camZoom = newZoom;
-                //     document.getElementById('cam-zoom').value = newZoom;
-                //     document.getElementById('val-zoom').textContent = `${newZoom.toFixed(1)}x`;
-                //     saveSettings();
-                //     return;
-                // }
-                // if (e.key === '-' || e.key === '_') {
-                //     e.preventDefault();
-                //     let newZoom = Math.max(1.0, S.camZoom - 0.1);
-                //     S.camZoom = newZoom;
-                //     document.getElementById('cam-zoom').value = newZoom;
-                //     document.getElementById('val-zoom').textContent = `${newZoom.toFixed(1)}x`;
-                //     saveSettings();
-                //     return;
-                // }
-            }
+            
 
             // 3. Regular Shortcuts (No Modifiers)
             if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+
+
+                // --- Recording Shortcuts ---
+                if (key === ' ' && isRecording) {
+                    e.preventDefault(); // Prevents the page from scrolling down
+                    document.getElementById('pause-btn').click();
+                    return;
+                }
+
+                if (key === 'enter' && isRecording) {
+                    e.preventDefault();
+                    document.getElementById('stop-btn').click();
+                    return;
+                }
 
                 if (!isPdfActive) {
                     if (key === 'a') {
@@ -3133,212 +2982,212 @@
         }
 
         function drawCameraFeed(ctxToDraw, videoEl, drawX, drawY, drawW, drawH, activeEffect) {
-    // Build the hardware-accelerated color adjustment string
-    let colorAdjustments = `brightness(${S.camBrightness}%) contrast(${S.camContrast}%) saturate(${S.camSaturation}%)`;
+            // Build the hardware-accelerated color adjustment string
+            let colorAdjustments = `brightness(${S.camBrightness}%) contrast(${S.camContrast}%) saturate(${S.camSaturation}%)`;
 
-    // --- 1. HQ BLUR LOGIC ---
-    if (activeEffect === 'bg-blur-hq' && currentSegmentationMask) {
-        if (typeof currentSegmentationMask.getAsFloat32Array !== 'function') {
-            ctxToDraw.filter = colorAdjustments;
-            ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-            ctxToDraw.filter = 'none';
-            return;
-        }
-
-        const mask = currentSegmentationMask;
-        const maskData = mask.getAsFloat32Array();
-        const width = mask.width;
-        const height = mask.height;
-
-        // STEP 1: Draw Background
-        ctxToDraw.save();
-        if (bgImageObject) {
-            const bgRatio = bgImageObject.width / bgImageObject.height;
-            const canvasRatio = drawW / drawH;
-            let bw, bh, bx, by;
-            if (bgRatio > canvasRatio) {
-                bh = drawH; bw = bh * bgRatio;
-                bx = drawX + (drawW - bw) / 2; by = drawY;
-            } else {
-                bw = drawW; bh = bw / bgRatio;
-                bx = drawX; by = drawY + (drawH - bh) / 2;
-            }
-            let filterStr = colorAdjustments;
-            if (S.bgBlurWithImg > 0) filterStr += ` blur(${S.bgBlurWithImg}px)`;
-            ctxToDraw.filter = filterStr;
-            ctxToDraw.drawImage(bgImageObject, bx, by, bw, bh);
-        } else {
-            ctxToDraw.filter = `blur(${Math.max(1, S.bgBlurNoImg)}px) ${colorAdjustments}`;
-            ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-        }
-        ctxToDraw.restore();
-
-        // STEP 2: Compute and draw Foreground Mask
-        hqFgCanvas.width = width;
-        hqFgCanvas.height = height;
-
-        hqFgCtx.save();
-        hqFgCtx.filter = colorAdjustments;
-        hqFgCtx.drawImage(videoEl, 0, 0, width, height);
-        
-        // NATIVE SHADOW LIFT
-        if (S.camShadows && S.camShadows > 0) {
-            hqFgCtx.globalCompositeOperation = 'screen';
-            hqFgCtx.globalAlpha = (S.camShadows / 100) * 0.4; // 40% max opacity
-            hqFgCtx.drawImage(videoEl, 0, 0, width, height);
-        }
-        hqFgCtx.restore();
-
-        const fgImgData = hqFgCtx.getImageData(0, 0, width, height);
-        const pixels = fgImgData.data;
-
-        for (let i = 0; i < maskData.length; i++) {
-            if (maskData[i] > 0.4) {
-                pixels[i * 4 + 3] = 0;
-            }
-        }
-
-        hqFgCtx.putImageData(fgImgData, 0, 0);
-        ctxToDraw.drawImage(hqFgCanvas, drawX, drawY, drawW, drawH);
-        return;
-    }
-
-    // --- 2. STANDARD BLUR LOGIC ---
-    if (activeEffect === 'bg-blur' && currentSegmentationMask) {
-        if (segCanvas.width !== videoEl.videoWidth) {
-            segCanvas.width = videoEl.videoWidth;
-            segCanvas.height = videoEl.videoHeight;
-        }
-
-        if (bgImageObject) {
-            const bgTempCanvas = document.createElement('canvas');
-            bgTempCanvas.width = segCanvas.width;
-            bgTempCanvas.height = segCanvas.height;
-            const bgTempCtx = bgTempCanvas.getContext('2d');
-
-            const bgRatio = bgImageObject.width / bgImageObject.height;
-            const canvasRatio = segCanvas.width / segCanvas.height;
-            let bw, bh, bx, by;
-            if (bgRatio > canvasRatio) {
-                bh = segCanvas.height; bw = bh * bgRatio;
-                bx = (segCanvas.width - bw) / 2; by = 0;
-            } else {
-                bw = segCanvas.width; bh = bw / bgRatio;
-                bx = 0; by = (segCanvas.height - bh) / 2;
-            }
-            bgTempCtx.drawImage(bgImageObject, bx, by, bw, bh);
-
-            ctxToDraw.save();
-            let filterStr = colorAdjustments;
-            if (S.bgBlurWithImg > 0) {
-                filterStr += ` blur(${S.bgBlurWithImg}px)`;
-            }
-            ctxToDraw.filter = filterStr;
-            ctxToDraw.drawImage(bgTempCanvas, drawX, drawY, drawW, drawH);
-            ctxToDraw.restore();
-        } else {
-            ctxToDraw.save();
-            ctxToDraw.filter = `blur(${S.bgBlurNoImg}px) ${colorAdjustments}`;
-            ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-            ctxToDraw.restore();
-        }
-
-        segCtx.save();
-        segCtx.clearRect(0, 0, segCanvas.width, segCanvas.height);
-
-        const blurAmt = Math.max(1, S.edgeBlur);
-        const brightnessVal = 1 + (S.edgeTrim / 50);
-        const contrastVal = 1 + (S.edgeHardness * 0.2);
-
-        segCtx.filter = `blur(${blurAmt}px) brightness(${brightnessVal}) contrast(${contrastVal})`;
-
-        if (!window.hqScratchCanvas) {
-            window.hqScratchCanvas = document.createElement('canvas');
-            window.hqScratchCanvas.width = 256;
-            window.hqScratchCanvas.height = 256;
-            window.hqScratchCtx = window.hqScratchCanvas.getContext('2d');
-        }
-
-        if (currentSegmentationMask instanceof Uint8Array) {
-            const scratchCtx = window.hqScratchCtx;
-            const maskImgData = scratchCtx.createImageData(256, 256);
-            const data = maskImgData.data;
-
-            for (let i = 0; i < currentSegmentationMask.length; i++) {
-                const classLabel = currentSegmentationMask[i];
-                const idx = i * 4;
-                if (classLabel > 0) {
-                    data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
-                } else {
-                    data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 0;
+            // --- 1. HQ BLUR LOGIC ---
+            if (activeEffect === 'bg-blur-hq' && currentSegmentationMask) {
+                if (typeof currentSegmentationMask.getAsFloat32Array !== 'function') {
+                    ctxToDraw.filter = colorAdjustments;
+                    ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+                    ctxToDraw.filter = 'none';
+                    return;
                 }
+
+                const mask = currentSegmentationMask;
+                const maskData = mask.getAsFloat32Array();
+                const width = mask.width;
+                const height = mask.height;
+
+                // STEP 1: Draw Background
+                ctxToDraw.save();
+                if (bgImageObject) {
+                    const bgRatio = bgImageObject.width / bgImageObject.height;
+                    const canvasRatio = drawW / drawH;
+                    let bw, bh, bx, by;
+                    if (bgRatio > canvasRatio) {
+                        bh = drawH; bw = bh * bgRatio;
+                        bx = drawX + (drawW - bw) / 2; by = drawY;
+                    } else {
+                        bw = drawW; bh = bw / bgRatio;
+                        bx = drawX; by = drawY + (drawH - bh) / 2;
+                    }
+                    let filterStr = colorAdjustments;
+                    if (S.bgBlurWithImg > 0) filterStr += ` blur(${S.bgBlurWithImg}px)`;
+                    ctxToDraw.filter = filterStr;
+                    ctxToDraw.drawImage(bgImageObject, bx, by, bw, bh);
+                } else {
+                    ctxToDraw.filter = `blur(${Math.max(1, S.bgBlurNoImg)}px) ${colorAdjustments}`;
+                    ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+                }
+                ctxToDraw.restore();
+
+                // STEP 2: Compute and draw Foreground Mask
+                hqFgCanvas.width = width;
+                hqFgCanvas.height = height;
+
+                hqFgCtx.save();
+                hqFgCtx.filter = colorAdjustments;
+                hqFgCtx.drawImage(videoEl, 0, 0, width, height);
+
+                // NATIVE SHADOW LIFT
+                if (S.camShadows && S.camShadows > 0) {
+                    hqFgCtx.globalCompositeOperation = 'screen';
+                    hqFgCtx.globalAlpha = (S.camShadows / 100) * 0.4; // 40% max opacity
+                    hqFgCtx.drawImage(videoEl, 0, 0, width, height);
+                }
+                hqFgCtx.restore();
+
+                const fgImgData = hqFgCtx.getImageData(0, 0, width, height);
+                const pixels = fgImgData.data;
+
+                for (let i = 0; i < maskData.length; i++) {
+                    if (maskData[i] > 0.4) {
+                        pixels[i * 4 + 3] = 0;
+                    }
+                }
+
+                hqFgCtx.putImageData(fgImgData, 0, 0);
+                ctxToDraw.drawImage(hqFgCanvas, drawX, drawY, drawW, drawH);
+                return;
             }
-            scratchCtx.putImageData(maskImgData, 0, 0);
-            segCtx.drawImage(window.hqScratchCanvas, 0, 0, segCanvas.width, segCanvas.height);
-        } else if (currentSegmentationMask) {
-            segCtx.drawImage(currentSegmentationMask, 0, 0, segCanvas.width, segCanvas.height);
+
+            // --- 2. STANDARD BLUR LOGIC ---
+            if (activeEffect === 'bg-blur' && currentSegmentationMask) {
+                if (segCanvas.width !== videoEl.videoWidth) {
+                    segCanvas.width = videoEl.videoWidth;
+                    segCanvas.height = videoEl.videoHeight;
+                }
+
+                if (bgImageObject) {
+                    const bgTempCanvas = document.createElement('canvas');
+                    bgTempCanvas.width = segCanvas.width;
+                    bgTempCanvas.height = segCanvas.height;
+                    const bgTempCtx = bgTempCanvas.getContext('2d');
+
+                    const bgRatio = bgImageObject.width / bgImageObject.height;
+                    const canvasRatio = segCanvas.width / segCanvas.height;
+                    let bw, bh, bx, by;
+                    if (bgRatio > canvasRatio) {
+                        bh = segCanvas.height; bw = bh * bgRatio;
+                        bx = (segCanvas.width - bw) / 2; by = 0;
+                    } else {
+                        bw = segCanvas.width; bh = bw / bgRatio;
+                        bx = 0; by = (segCanvas.height - bh) / 2;
+                    }
+                    bgTempCtx.drawImage(bgImageObject, bx, by, bw, bh);
+
+                    ctxToDraw.save();
+                    let filterStr = colorAdjustments;
+                    if (S.bgBlurWithImg > 0) {
+                        filterStr += ` blur(${S.bgBlurWithImg}px)`;
+                    }
+                    ctxToDraw.filter = filterStr;
+                    ctxToDraw.drawImage(bgTempCanvas, drawX, drawY, drawW, drawH);
+                    ctxToDraw.restore();
+                } else {
+                    ctxToDraw.save();
+                    ctxToDraw.filter = `blur(${S.bgBlurNoImg}px) ${colorAdjustments}`;
+                    ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+                    ctxToDraw.restore();
+                }
+
+                segCtx.save();
+                segCtx.clearRect(0, 0, segCanvas.width, segCanvas.height);
+
+                const blurAmt = Math.max(1, S.edgeBlur);
+                const brightnessVal = 1 + (S.edgeTrim / 50);
+                const contrastVal = 1 + (S.edgeHardness * 0.2);
+
+                segCtx.filter = `blur(${blurAmt}px) brightness(${brightnessVal}) contrast(${contrastVal})`;
+
+                if (!window.hqScratchCanvas) {
+                    window.hqScratchCanvas = document.createElement('canvas');
+                    window.hqScratchCanvas.width = 256;
+                    window.hqScratchCanvas.height = 256;
+                    window.hqScratchCtx = window.hqScratchCanvas.getContext('2d');
+                }
+
+                if (currentSegmentationMask instanceof Uint8Array) {
+                    const scratchCtx = window.hqScratchCtx;
+                    const maskImgData = scratchCtx.createImageData(256, 256);
+                    const data = maskImgData.data;
+
+                    for (let i = 0; i < currentSegmentationMask.length; i++) {
+                        const classLabel = currentSegmentationMask[i];
+                        const idx = i * 4;
+                        if (classLabel > 0) {
+                            data[idx] = 255; data[idx + 1] = 255; data[idx + 2] = 255; data[idx + 3] = 255;
+                        } else {
+                            data[idx] = 0; data[idx + 1] = 0; data[idx + 2] = 0; data[idx + 3] = 0;
+                        }
+                    }
+                    scratchCtx.putImageData(maskImgData, 0, 0);
+                    segCtx.drawImage(window.hqScratchCanvas, 0, 0, segCanvas.width, segCanvas.height);
+                } else if (currentSegmentationMask) {
+                    segCtx.drawImage(currentSegmentationMask, 0, 0, segCanvas.width, segCanvas.height);
+                }
+
+                segCtx.filter = 'none';
+                segCtx.globalCompositeOperation = 'source-in';
+
+                const sw = segCanvas.width;
+                const sh = segCanvas.height;
+                segCtx.translate(sw / 2, sh / 2);
+                segCtx.scale(S.subjectScale, S.subjectScale);
+                segCtx.translate(-sw / 2 + S.subjectPanX, -sh / 2 + S.subjectPanY);
+
+                segCtx.filter = colorAdjustments;
+                segCtx.drawImage(videoEl, 0, 0);
+
+                // NATIVE SHADOW LIFT
+                if (S.camShadows && S.camShadows > 0) {
+                    segCtx.globalCompositeOperation = 'screen';
+                    segCtx.globalAlpha = (S.camShadows / 100) * 0.4;
+                    segCtx.drawImage(videoEl, 0, 0);
+                }
+
+                segCtx.restore();
+                ctxToDraw.drawImage(segCanvas, drawX, drawY, drawW, drawH);
+            }
+            // --- 3. NORMAL DRAWING (No Background Replacements) ---
+            else {
+                let finalFilter = colorAdjustments;
+                if (activeEffect !== 'none' && activeEffect !== 'bg-blur' && activeEffect !== 'bg-blur-hq') {
+                    finalFilter += ` ${activeEffect}`;
+                }
+
+                ctxToDraw.save();
+                ctxToDraw.filter = finalFilter;
+                ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+
+                // NATIVE SHADOW LIFT
+                if (S.camShadows && S.camShadows > 0) {
+                    ctxToDraw.globalCompositeOperation = 'screen';
+                    ctxToDraw.globalAlpha = (S.camShadows / 100) * 0.4;
+                    ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
+                }
+
+                ctxToDraw.restore();
+                ctxToDraw.filter = 'none';
+            }
+
+            // Apply Edge Vignette Overlay
+            if (S.useVignette) {
+                ctxToDraw.save();
+                const gradient = ctxToDraw.createRadialGradient(
+                    drawX + drawW / 2, drawY + drawH / 2, drawW * 0.35,
+                    drawX + drawW / 2, drawY + drawH / 2, drawW * 0.75
+                );
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0.65)');
+
+                ctxToDraw.fillStyle = gradient;
+                ctxToDraw.globalCompositeOperation = 'source-over';
+                ctxToDraw.fillRect(drawX, drawY, drawW, drawH);
+                ctxToDraw.restore();
+            }
         }
-
-        segCtx.filter = 'none';
-        segCtx.globalCompositeOperation = 'source-in';
-
-        const sw = segCanvas.width;
-        const sh = segCanvas.height;
-        segCtx.translate(sw / 2, sh / 2);
-        segCtx.scale(S.subjectScale, S.subjectScale);
-        segCtx.translate(-sw / 2 + S.subjectPanX, -sh / 2 + S.subjectPanY);
-
-        segCtx.filter = colorAdjustments;
-        segCtx.drawImage(videoEl, 0, 0);
-        
-        // NATIVE SHADOW LIFT
-        if (S.camShadows && S.camShadows > 0) {
-            segCtx.globalCompositeOperation = 'screen';
-            segCtx.globalAlpha = (S.camShadows / 100) * 0.4;
-            segCtx.drawImage(videoEl, 0, 0);
-        }
-
-        segCtx.restore();
-        ctxToDraw.drawImage(segCanvas, drawX, drawY, drawW, drawH);
-    } 
-    // --- 3. NORMAL DRAWING (No Background Replacements) ---
-    else {
-        let finalFilter = colorAdjustments;
-        if (activeEffect !== 'none' && activeEffect !== 'bg-blur' && activeEffect !== 'bg-blur-hq') {
-            finalFilter += ` ${activeEffect}`; 
-        }
-        
-        ctxToDraw.save();
-        ctxToDraw.filter = finalFilter;
-        ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-        
-        // NATIVE SHADOW LIFT
-        if (S.camShadows && S.camShadows > 0) {
-            ctxToDraw.globalCompositeOperation = 'screen';
-            ctxToDraw.globalAlpha = (S.camShadows / 100) * 0.4;
-            ctxToDraw.drawImage(videoEl, drawX, drawY, drawW, drawH);
-        }
-        
-        ctxToDraw.restore();
-        ctxToDraw.filter = 'none'; 
-    }
-
-    // Apply Edge Vignette Overlay
-    if (S.useVignette) {
-        ctxToDraw.save();
-        const gradient = ctxToDraw.createRadialGradient(
-            drawX + drawW / 2, drawY + drawH / 2, drawW * 0.35, 
-            drawX + drawW / 2, drawY + drawH / 2, drawW * 0.75  
-        );
-        gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');      
-        gradient.addColorStop(1, 'rgba(0, 0, 0, 0.65)');   
-        
-        ctxToDraw.fillStyle = gradient;
-        ctxToDraw.globalCompositeOperation = 'source-over'; 
-        ctxToDraw.fillRect(drawX, drawY, drawW, drawH);
-        ctxToDraw.restore();
-    }
-}
 
         function drawSolidBoard(ctxToDraw) {
             ctxToDraw.save();
@@ -4495,7 +4344,7 @@
             S.camPanY = val;
             saveSettings();
         });
-        
+
         // Color & Shadow Adjustments Event Listeners
         ['brightness', 'contrast', 'saturation', 'shadows'].forEach(setting => {
             document.getElementById(`cam-${setting}`).addEventListener('input', (e) => {
@@ -4874,14 +4723,29 @@
         // Recording triggers
         startBtn.addEventListener('click', startRecording);
         pauseBtn.addEventListener('click', () => {
-            if (!mediaRecorder) return;
+            // FIX: Use currentMediaOutput instead of the unassigned mediaRecorder
+            if (!currentMediaOutput) return;
+
             const pTxt = document.getElementById('pause-text');
-            if (mediaRecorder.state === 'recording') {
-                mediaRecorder.pause(); isPaused = true; pTxt.textContent = 'Resume';
+
+            // Rely on the global isPaused flag to track the state
+            if (!isPaused) {
+                isPaused = true;
+                pTxt.textContent = 'Resume';
                 recordingIndicator.querySelector('.w-3').className = 'w-3 h-3 bg-yellow-500 rounded-full';
-            } else if (mediaRecorder.state === 'paused') {
-                mediaRecorder.resume(); isPaused = false; pTxt.textContent = 'Pause';
+
+                // Attempt to pause the muxer if the library supports it natively
+                if (typeof currentMediaOutput.pause === 'function') {
+                    currentMediaOutput.pause();
+                }
+            } else {
+                isPaused = false;
+                pTxt.textContent = 'Pause';
                 recordingIndicator.querySelector('.w-3').className = 'w-3 h-3 bg-red-500 rounded-full pulse-red';
+
+                if (typeof currentMediaOutput.resume === 'function') {
+                    currentMediaOutput.resume();
+                }
             }
         });
         stopBtn.addEventListener('click', async () => {
