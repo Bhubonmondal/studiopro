@@ -29,6 +29,11 @@
         window.LocalFilesetResolver = FilesetResolver;
         console.log("MediaPipe CDN modules successfully hooked to window context.");
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/pptxviewjs/dist/PptxViewJS.min.js"></script>
     <script type="module">
         import {
             Output,
@@ -344,7 +349,7 @@
                     </div>
                     <div class="space-y-1 pt-2 border-t border-slate-700/50 flex items-center justify-between">
                         <label class="text-xs font-medium text-slate-400 flex flex-col">
-                            <span>Floating Camera</span>
+                            <span>Show Floating Camera</span>
                             <span class="text-[10px] text-slate-500 font-normal">Camera on board & presentation</span>
                         </label>
                         <div class="w-8 h-4 bg-slate-800 rounded-full relative cursor-pointer" id="pip-toggle-track">
@@ -531,7 +536,7 @@
                             class="w-full bg-slate-700 border border-slate-600 rounded-lg px-2 py-1.5 text-xs text-white">
                             <option value="none">Normal/No Effects</option>
                             <option value="bg-blur">Blur/Image Background</option>
-                            <option value="bg-blur-hq">HQ Blur/Image Background</option>
+                            <option value="bg-blur-hq">High Quality Blur/Image Background</option>
                             <option value="grayscale(100%)">Grayscale</option>
                             <option value="sepia(100%)">Sepia</option>
                             <option value="brightness(130%)">Brighten</option>
@@ -795,7 +800,7 @@
                                 d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
                             </path>
                         </svg>
-                        Take Snapshot
+                        Take Screenshot
                     </button>
                 </div>
             </div>
@@ -1288,6 +1293,24 @@
         // Helper: Deep Clone
         function deepClone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
+        let pipWindow = null;
+        let rightToolbarGlobal = null;
+
+        // Helper to safely find toolbar elements whether they are in the main window or PiP window
+        function getWbEl(id) {
+            if (rightToolbarGlobal) {
+                const el = rightToolbarGlobal.querySelector('#' + id);
+                if (el) return el;
+            }
+            return document.getElementById(id);
+        }
+
+        // Ensure we capture the toolbar on load
+        window.addEventListener('DOMContentLoaded', () => {
+            rightToolbarGlobal = document.querySelector('aside.w-16');
+            // ... (keep the rest of your DOMContentLoaded logic)
+        });
+
         // Manage scrollbar and control visibility dynamically
         function updateScrollbarVisibility() {
             const boardControls = document.getElementById('board-page-controls');
@@ -1362,15 +1385,15 @@
                 setActiveStrokes(deepClone(h.stack[h.index]));
                 needsWbRedraw = true;
                 saveStrokes();
-                showToast('Undo performed', 'info');
+                // showToast('Undo performed', 'info');
             } else if (h && h.index === 0) {
                 h.index = -1;
                 setActiveStrokes([]);
                 needsWbRedraw = true;
                 saveStrokes();
-                showToast('Board cleared via Undo', 'info');
+                // showToast('Board cleared via Undo', 'info');
             } else {
-                showToast('Nothing to undo', 'info');
+                // showToast('Nothing to undo', 'info');
             }
         }
 
@@ -1384,9 +1407,9 @@
                 setActiveStrokes(deepClone(h.stack[h.index]));
                 needsWbRedraw = true;
                 saveStrokes();
-                showToast('Redo performed', 'info');
+                // showToast('Redo performed', 'info');
             } else {
-                showToast('Nothing to redo', 'info');
+                // showToast('Nothing to redo', 'info');
             }
         }
 
@@ -1465,7 +1488,7 @@
                     return;
                 }
             }
-            
+
 
             // 3. Regular Shortcuts (No Modifiers)
             if (!e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -1627,7 +1650,7 @@
                             const prevPage = getCurrentPage() - 1;
                             if (prevPage >= 1) {
                                 jumpToPdfPage(prevPage);
-                                showToast(`Page ${prevPage}`, 'info');
+                                // showToast(`Page ${prevPage}`, 'info');
                             }
                             break;
                         case 'ArrowRight':
@@ -1635,7 +1658,7 @@
                             const nextPage = getCurrentPage() + 1;
                             if (nextPage <= pdfPagesArray.length) {
                                 jumpToPdfPage(nextPage);
-                                showToast(`Page ${nextPage}`, 'info');
+                                // showToast(`Page ${nextPage}`, 'info');
                             }
                             break;
                     }
@@ -1687,10 +1710,18 @@
         }
 
         function updateCursor() {
-            if (S.wbTool === 'pointer') {
-                uiCanvas.style.cursor = 'default';
+            const drawCustomCursorTools = ['pen1', 'pen2', 'highlighter', 'stroke-eraser', 'pixel-eraser'];
+
+            if (isDraggingPip) {
+                uiCanvas.style.cursor = 'grabbing';
+            } else if (isHoveringPip) {
+                uiCanvas.style.cursor = 'grab';
+            } else if (drawCustomCursorTools.includes(S.wbTool)) {
+                uiCanvas.style.cursor = 'none'; // Hide native, render custom SVG
+            } else if (S.wbTool === 'hand') {
+                uiCanvas.style.cursor = (isPanning || movingStroke) ? 'grabbing' : 'grab';
             } else {
-                uiCanvas.style.cursor = 'none'; // Custom smooth recorded cursors will take place
+                uiCanvas.style.cursor = 'default';
             }
         }
 
@@ -1955,20 +1986,46 @@
                 saveSettings();
             };
             img.onerror = () => {
-                showToast('Failed to parse background image.', 'error');
+                showToast('Failed to load background image.', 'error');
             };
             img.src = src;
         }
 
         function syncToolButtonUI() {
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'text-white'));
-            const activeToolBtn = document.querySelector(`.tool-btn[data-tool="${S.wbTool}"]`);
+            const toolbar = rightToolbarGlobal || document.querySelector('aside.w-16');
+            if (!toolbar) return;
+
+            toolbar.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'text-white'));
+            const activeToolBtn = toolbar.querySelector(`.tool-btn[data-tool="${S.wbTool}"]`);
             if (activeToolBtn) activeToolBtn.classList.add('active', 'text-white');
 
-            const cPicker = document.getElementById('wb-color');
-            if (S.wbTool === 'pen1') cPicker.value = S.pen1Color;
-            else if (S.wbTool === 'pen2') cPicker.value = S.pen2Color;
-            else if (S.wbTool === 'highlighter') cPicker.value = S.highlighterColor;
+            const cPicker = toolbar.querySelector('#wb-color');
+            if (cPicker) {
+                if (S.wbTool === 'pen1') cPicker.value = S.pen1Color;
+                else if (S.wbTool === 'pen2') cPicker.value = S.pen2Color;
+                else if (S.wbTool === 'highlighter') cPicker.value = S.highlighterColor;
+            }
+        }
+
+        function updateToolColors() {
+            const toolbar = rightToolbarGlobal || document.querySelector('aside.w-16');
+            if (!toolbar) return;
+
+            const indPen1 = toolbar.querySelector('#ind-pen1');
+            const indPen2 = toolbar.querySelector('#ind-pen2');
+            const indHighlighter = toolbar.querySelector('#ind-highlighter');
+
+            if (indPen1) indPen1.style.backgroundColor = S.pen1Color;
+            if (indPen2) indPen2.style.backgroundColor = S.pen2Color;
+            if (indHighlighter) indHighlighter.style.backgroundColor = S.highlighterColor;
+
+            const cPicker = toolbar.querySelector('#wb-color');
+            if (cPicker) {
+                if (S.wbTool === 'pen1') cPicker.value = S.pen1Color;
+                else if (S.wbTool === 'pen2') cPicker.value = S.pen2Color;
+                else if (S.wbTool === 'highlighter') cPicker.value = S.highlighterColor;
+            }
+            updateCursor();
         }
 
         function toggleBtnColor(id, isActive) {
@@ -2110,7 +2167,7 @@
             input.value = ts;
             S.watermark = ts;
             saveSettings();
-            showToast('Timestamp added', 'success');
+            // showToast('Timestamp added', 'success');
         });
 
         // Whiteboard Background Color Selection Changes
@@ -2128,7 +2185,7 @@
             updateCursor();
             needsWbRedraw = true;
             updateScrollbarVisibility();
-            showToast(`Board Background Set to Solid ${e.target.value.toUpperCase()}`, 'success');
+            showToast(`Board Background Set to ${e.target.value.toUpperCase()}`, 'success');
         });
 
         // Background Blur Model Loading
@@ -2161,7 +2218,7 @@
             isSegmenterInitialized = true; // Mark as completely ready!
 
             document.getElementById('toast-container').innerHTML = '';
-            showToast('Blur model initialized', 'success');
+            showToast('Blur model started', 'success');
         }
 
         // Offline High-Quality Multi-Class Engine Setup
@@ -2175,7 +2232,7 @@
 
             if (isHqLoading || isHqSegmenterInitialized) return;
             isHqLoading = true;
-            showToast('Downloading HQ model...', 'info', true);
+            showToast('Downloading HQ blur model...', 'info', true);
 
             try {
                 const ImageSegmenter = window.LocalImageSegmenter;
@@ -2200,7 +2257,7 @@
                 isHqSegmenterInitialized = true;
                 isHqLoading = false;
                 document.getElementById('toast-container').innerHTML = '';
-                showToast('hq blur model initialized', 'success');
+                showToast('hq blur model started', 'success');
             } catch (error) {
                 console.error("HQ blur model failed:", error);
                 showToast('Failed to load HQ blur model.', 'error');
@@ -2345,7 +2402,7 @@
                 // Populate dropdown selectors with explicit click-to-request triggers
                 addHardwareFallbackOption(audioSelect, 'audio');
                 addHardwareFallbackOption(videoSelect, 'video');
-                showToast('Camera and Mic Permission not given!', 'info', true);
+                showToast('Camera and Mic permission not given!', 'info', true);
             }
         }
 
@@ -2368,7 +2425,7 @@
                     await getDevices();
                     showToast("Microphone access granted!", "success");
                 } catch (err) {
-                    showToast("Microphone access remains blocked.", "error");
+                    showToast("Microphone access denied.", "error");
                     audioSelect.value = "REQUEST_PERMISSION";
                     return;
                 }
@@ -2439,6 +2496,8 @@
                 if (screenStream) screenStream.getTracks().forEach(t => t.stop());
                 isScreenRecording = false;
                 updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), false);
+
+                if (pipWindow) pipWindow.close();
                 return;
             }
             try {
@@ -2453,7 +2512,106 @@
                 screenStream.getVideoTracks()[0].onended = () => {
                     isScreenRecording = false;
                     updateToggleUI(document.getElementById('screen-toggle-knob'), document.getElementById('screen-toggle-track'), false);
+                    if (pipWindow) pipWindow.close();
                 };
+
+                if ('documentPictureInPicture' in window) {
+                    try {
+                        // Calculate size: Camera Diameter + Toolbar Width (approx 64px) + Padding
+                        const camDiameter = S.pipSize * 2 + (S.pipBorderWidth * 2);
+                        const pipWidth = camDiameter + 80;
+                        pipWindow = await documentPictureInPicture.requestWindow({ width: pipWidth, height: 600 });
+
+                        // Copy styles safely
+                        [...document.styleSheets].forEach((styleSheet) => {
+                            try {
+                                const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+                                const style = document.createElement('style');
+                                style.textContent = cssRules;
+                                pipWindow.document.head.appendChild(style);
+                            } catch (e) {
+                                const link = document.createElement('link');
+                                link.rel = 'stylesheet'; link.type = styleSheet.type; link.href = styleSheet.href;
+                                pipWindow.document.head.appendChild(link);
+                            }
+                        });
+
+                        // Inject CSS for the separated layout
+                        pipWindow.document.head.innerHTML += `
+                    <style>
+                        body { margin: 0; display: flex; flex-direction: row; align-items: center; justify-content: space-between; height: 100vh; background: #000; overflow: hidden; padding-left: 10px; }
+                        
+                        /* Circular Camera Styling */
+                        .pip-cam-wrapper {
+                            width: ${camDiameter}px; 
+                            height: ${camDiameter}px; 
+                            border-radius: 50%;
+                            overflow: hidden;
+                            border: ${S.pipBorderWidth}px solid ${S.pipBorderColor};
+                            box-sizing: border-box;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background: #1e293b;
+                            flex-shrink: 0;
+                        }
+                        .pip-cam { 
+                            width: 100%; 
+                            height: 100%; 
+                            object-fit: cover; 
+                            transform: ${S.isMirrored ? 'scaleX(-1)' : 'none'}; 
+                        }
+                        aside.w-16 { height: 100vh !important; border-left: 1px solid #334155; }
+                    </style>
+                `;
+
+                        const pipBody = pipWindow.document.body;
+
+                        // 1. Add Camera Wrapper
+                        const camWrapper = document.createElement('div');
+                        camWrapper.className = 'pip-cam-wrapper';
+                        const pipVid = document.createElement('video');
+                        pipVid.className = 'pip-cam'; pipVid.autoplay = true; pipVid.muted = true;
+                        if (cameraStream) pipVid.srcObject = cameraStream;
+                        camWrapper.appendChild(pipVid);
+                        pipBody.appendChild(camWrapper);
+
+                        // 2. Move Toolbar
+                        const toolbarPlaceholder = document.createElement('div');
+                        toolbarPlaceholder.id = 'toolbar-placeholder';
+                        rightToolbarGlobal.parentNode.insertBefore(toolbarPlaceholder, rightToolbarGlobal);
+
+                        // Hide Camera Mode button since we are actively sharing
+                        const pointerTool = rightToolbarGlobal.querySelector('[data-tool="pointer"]');
+                        if (pointerTool) pointerTool.style.display = 'none';
+
+                        if (S.wbTool === 'pointer') {
+                            S.wbTool = 'pen1'; isWhiteboardActive = true;
+                            syncToolButtonUI(); updateCursor();
+                        }
+
+                        pipBody.appendChild(rightToolbarGlobal);
+
+                        // 3. Cleanup on close
+                        pipWindow.addEventListener('pagehide', () => {
+                            pipWindow = null;
+                            if (isScreenRecording) toggleScreenShare();
+
+                            if (pointerTool) pointerTool.style.display = '';
+                            const placeholder = document.getElementById('toolbar-placeholder');
+                            if (placeholder) {
+                                placeholder.parentNode.insertBefore(rightToolbarGlobal, placeholder);
+                                placeholder.remove();
+                            }
+                        });
+
+                    } catch (err) {
+                        console.warn("Document PIP blocked or failed:", err);
+                        // showToast('Floating PiP mode not supported. Sharing screen only.', 'info');
+                    }
+                } else {
+                    showToast('Not supported in this browser.', 'info');
+                }
             } catch (err) { showToast('Screen sharing canceled.', 'error'); }
         }
 
@@ -2641,17 +2799,26 @@
             clampPipBounds();
         }
 
-        // UPDATE THIS FUNCTION
         function handleMediaUpload(files) {
             let added = false;
             let processedCount = 0;
 
             Array.from(files).forEach(file => {
-                if (file.type === 'application/pdf' || file.type.startsWith('image/')) {
-                    // Push the raw file directly, skip the Base64 FileReader
+                // 1. Identify File Types
+                const isImage = file.type.startsWith('image/');
+                const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                const isPptx = file.name.match(/\.pptx$/i);
+                const isOtherOffice = file.name.match(/\.(ppt|doc|docx|xls|xlsx)$/i);
+
+                // 2. Handle Supported Formats (PDF, Image, PPTX)
+                if (isPdf || isImage || isPptx) {
+                    let mediaType = 'pdf';
+                    if (isImage) mediaType = 'image';
+                    if (isPptx) mediaType = 'pptx';
+
                     mediaQueue.push({
                         file: file,
-                        type: file.type.startsWith('image/') ? 'image' : 'pdf',
+                        type: mediaType,
                         name: file.name,
                         strokes: [],
                         pages: null,
@@ -2659,21 +2826,39 @@
                     });
 
                     if (!pdfZoomMap[file.name]) pdfZoomMap[file.name] = 1.0;
-
-                    processedCount++;
-                    if (processedCount === files.length) {
-                        updateMediaListUI();
-                        if (!isPdfActive || mediaQueue.length === files.length) {
-                            loadMedia(mediaQueue.length - 1);
-                        }
-                        saveStrokes();
-                        showToast('Media added to queue.', 'success');
-                    }
                     added = true;
+
+                    // Trigger the "Inaccurate Formatting" warning specifically for PPTX
+                    if (isPptx) {
+                        showToast(`"${file.name}" view may not be 100% accurate. For perfect formatting, convert to PDF.`, 'info', true);
+                    }
+
+                }
+                // 3. Handle Other Office Files (DOCX, PPT, etc.)
+                else if (isOtherOffice) {
+                    showToast(`"${file.name}" Not supported, please convert to PDF.`, 'error', true);
+                }
+                // 4. Handle Unsupported Garbage Files (MP3s, Zips, etc.)
+                else {
+                    showToast(`Not supported: ${file.name}. Only PDF, Images, and PPTX are allowed.`, 'error');
+                }
+
+                processedCount++;
+
+                // 5. Finalize the Queue
+                if (processedCount === files.length && added) {
+                    updateMediaListUI();
+                    if (!isPdfActive || mediaQueue.length === files.length) {
+                        loadMedia(mediaQueue.length - 1);
+                    }
+                    saveStrokes();
+
+                    // Only show the generic success toast if we didn't just warn them about a PPTX
+                    if (!isPptx) {
+                        showToast('PDF/image added.', 'success');
+                    }
                 }
             });
-
-            if (!added) { showToast('Only PDF and Image files supported.', 'error'); }
         }
 
         async function loadMedia(index) {
@@ -2704,14 +2889,16 @@
                 return;
             }
 
-            // Determine the data extraction pipeline: source from live uploaded file descriptor or dataURL backup string
+            // Determine the data extraction pipeline
             const targetSource = item.file ? item.file : item.base64Data;
             if (!targetSource) return;
 
+            // ----------------------------------------------------
+            // 1. PDF HANDLING (With Garbage Collector Memory Fix)
+            // ----------------------------------------------------
             if (item.type === 'pdf') {
                 pdfLoadingToast = showToast('Rendering PDF pages...', 'info', true);
 
-                // Get the ArrayBuffer directly from the File object
                 const getArrayBuffer = async () => {
                     if (item.file) return await item.file.arrayBuffer();
                     return null;
@@ -2721,17 +2908,23 @@
                     const buffer = await getArrayBuffer();
                     if (!buffer) throw new Error("File data lost. Please re-upload.");
 
-                    // Pass the raw buffer directly to pdf.js
                     pdfjsLib.getDocument({ data: buffer }).promise.then(async (pdf) => {
                         let tempPagesArray = [];
-                        // WARNING: See Step 4 regarding this loop
+
                         for (let i = 1; i <= pdf.numPages; i++) {
                             const page = await pdf.getPage(i);
                             const viewport = page.getViewport({ scale: 1.5 });
                             const pc = document.createElement('canvas');
                             pc.width = viewport.width; pc.height = viewport.height;
                             await page.render({ canvasContext: pc.getContext('2d'), viewport: viewport }).promise;
-                            tempPagesArray.push({ canvas: pc, w: viewport.width, h: viewport.height });
+
+                            tempPagesArray.push({
+                                canvas: pc,
+                                w: viewport.width,
+                                h: viewport.height,
+                                pageObj: page,  // Saves raw data for the lazy-loader memory manager
+                                type: 'pdf'     // Tags it so the GC knows it can safely wipe the canvas
+                            });
                         }
                         item.pages = tempPagesArray;
 
@@ -2740,19 +2933,93 @@
                             pdfScrollY = 0;
                             recalcPdfScrollBounds(); updatePdfToolbarUI(); pushHistory();
                         }
-                        if (pdfLoadingToast && pdfLoadingToast.parentElement) { pdfLoadingToast.close(); showToast('PDF Loaded', 'success'); }
+                        if (pdfLoadingToast && pdfLoadingToast.parentElement) {
+                            pdfLoadingToast.close(); showToast('PDF Loaded', 'success');
+                        }
                     });
                 } catch (e) {
-                    if (pdfLoadingToast && pdfLoadingToast.parentElement) { pdfLoadingToast.close(); showToast('Error rendering PDF.', 'error'); }
+                    if (pdfLoadingToast && pdfLoadingToast.parentElement) {
+                        pdfLoadingToast.close(); showToast('Error rendering PDF.', 'error');
+                    }
                 }
-            } else {
-                // Handle image type
+            }
+            // ----------------------------------------------------
+            // 2. PPTX HANDLING (With Crash-Proof Try/Catch bounds)
+            // ----------------------------------------------------
+            else if (item.type === 'pptx' || item.name.toLowerCase().endsWith('.pptx')) {
+                pdfLoadingToast = showToast('Showing slides...', 'info', true);
+
+                try {
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = 1920;
+                    tempCanvas.height = 1080;
+
+                    const viewer = new window.PptxViewJS.PPTXViewer({ canvas: tempCanvas });
+                    await viewer.loadFile(item.file);
+
+                    const totalSlides = viewer.getSlideCount();
+                    let tempPagesArray = [];
+
+                    // Crash-proof loop: Catch out-of-bounds library errors gracefully
+                    for (let i = 1; i <= totalSlides + 1; i++) {
+                        try {
+                            await viewer.renderSlide(i);
+
+                            const savedCanvas = document.createElement('canvas');
+                            savedCanvas.width = tempCanvas.width;
+                            savedCanvas.height = tempCanvas.height;
+                            savedCanvas.getContext('2d').drawImage(tempCanvas, 0, 0);
+
+                            tempPagesArray.push({
+                                canvas: savedCanvas,
+                                w: savedCanvas.width,
+                                h: savedCanvas.height,
+                                type: 'pptx' // Protects slides from being deleted by the PDF memory manager
+                            });
+                        } catch (err) {
+                            console.log(`Finished rendering slides safely. (Stopped at index ${i})`);
+                            break; // Exit cleanly when it hits the phantom slide
+                        }
+                    }
+
+                    if (tempPagesArray.length > 0) {
+                        item.pages = tempPagesArray;
+
+                        if (activeMediaIndex === index) {
+                            pdfPagesArray = tempPagesArray;
+                            pdfScrollY = 0;
+                            recalcPdfScrollBounds(); updatePdfToolbarUI(); pushHistory();
+                        }
+
+                        if (pdfLoadingToast) {
+                            pdfLoadingToast.close(); showToast('PowerPoint Loaded', 'success');
+                        }
+                    } else {
+                        throw new Error("No slides could be rendered.");
+                    }
+                } catch (e) {
+                    console.error(e);
+                    if (pdfLoadingToast) {
+                        pdfLoadingToast.close(); showToast('Error rendering PowerPoint.', 'error');
+                    }
+                }
+            }
+            // ----------------------------------------------------
+            // 3. IMAGE HANDLING
+            // ----------------------------------------------------
+            else {
                 const img = new Image();
                 img.onload = () => {
                     const pc = document.createElement('canvas');
                     pc.width = img.width; pc.height = img.height;
                     pc.getContext('2d').drawImage(img, 0, 0);
-                    item.pages = [{ canvas: pc, w: img.width, h: img.height }];
+
+                    item.pages = [{
+                        canvas: pc,
+                        w: img.width,
+                        h: img.height,
+                        type: 'image' // Protects image from the PDF memory manager
+                    }];
 
                     if (activeMediaIndex === index) {
                         pdfPagesArray = item.pages;
@@ -2764,9 +3031,9 @@
             }
         }
 
-        // NEW FUNCTION: Renders a page only when requested
+
         async function renderPdfPageOnDemand(pageItem) {
-            if (pageItem.isRendering || pageItem.canvas) return;
+            if (pageItem.isRendering || pageItem.canvas || !pageItem.pageObj) return;
 
             pageItem.isRendering = true;
             try {
@@ -3354,7 +3621,9 @@
 
                     // GARBAGE COLLECTION: If the page is completely out of the viewport memory buffer
                     if (drawY + drawH < pdfScrollY - memoryBuffer || drawY > pdfScrollY + CANVAS_HEIGHT + memoryBuffer) {
-                        if (page.canvas && !page.isRendering) {
+
+                        // NEW: Only wipe RAM for PDFs. Keeps PPTX and Images safely in memory.
+                        if (page.type === 'pdf' && page.canvas && !page.isRendering) {
                             // Destroy the canvas width/height to force the browser to wipe it from RAM
                             page.canvas.width = 0;
                             page.canvas.height = 0;
@@ -3383,32 +3652,56 @@
                 }
             }
 
+
             // Check if the user has S.showPip enabled before drawing the PIP circle
             const usePip = S.showPip && !forceCamera && !cameraDrawnAsBackground && (isScreenRecording || isWhiteboardActive || isPdfActive);
 
             // PIP Camera Circle
             if (usePip && cameraVideo.readyState >= 2) {
-                ctx.save();
-                ctx.beginPath(); ctx.arc(pipX, pipY, S.pipSize, 0, Math.PI * 2);
-                ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 25; ctx.shadowOffsetY = 15;
-                ctx.fillStyle = '#000'; ctx.fill(); ctx.shadowColor = 'transparent';
-                ctx.clip();
 
-                ctx.translate(pipX, pipY);
-                if (S.isMirrored) ctx.scale(-1, 1);
+                if (pipWindow) {
+                    // Calculate the exact center of the camera circle, ignoring the toolbar on the right
+                    const camRadius = S.pipSize + S.pipBorderWidth;
 
-                const vRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
-                let drawW, drawH;
-                if (vRatio > 1) { drawH = S.pipSize * 2 * S.camZoom; drawW = drawH * vRatio; }
-                else { drawW = S.pipSize * 2 * S.camZoom; drawH = drawW / vRatio; }
-                const pxOff = (S.camPanX / 100) * (drawW / 2); const pyOff = (S.camPanY / 100) * (drawH / 2);
+                    // The camera is flush left with a 10px padding from our CSS
+                    const pipCameraCenterX = pipWindow.screenX + 10 + camRadius;
 
-                drawCameraFeed(ctx, cameraVideo, -drawW / 2 - pxOff, -drawH / 2 + pyOff, drawW, drawH, S.effect);
-                ctx.restore();
+                    // Vertically, the camera is flex-centered in the window
+                    const pipCameraCenterY = pipWindow.screenY + (pipWindow.outerHeight / 2);
 
-                if (S.pipBorderWidth > 0) {
+                    // Offset relative to the main browser window
+                    const relX = pipCameraCenterX - window.screenX;
+                    const relY = pipCameraCenterY - window.screenY;
+
+                    // Map back to canvas coordinates
+                    pipX = (relX / window.outerWidth) * CANVAS_WIDTH;
+                    pipY = (relY / window.outerHeight) * CANVAS_HEIGHT;
+
+                    clampPipBounds();
+                } else {
+                    // ONLY draw on the main canvas if the PiP window is CLOSED
+                    ctx.save();
                     ctx.beginPath(); ctx.arc(pipX, pipY, S.pipSize, 0, Math.PI * 2);
-                    ctx.lineWidth = S.pipBorderWidth; ctx.strokeStyle = S.pipBorderColor; ctx.stroke();
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 25; ctx.shadowOffsetY = 15;
+                    ctx.fillStyle = '#000'; ctx.fill(); ctx.shadowColor = 'transparent';
+                    ctx.clip();
+
+                    ctx.translate(pipX, pipY);
+                    if (S.isMirrored) ctx.scale(-1, 1);
+
+                    const vRatio = cameraVideo.videoWidth / cameraVideo.videoHeight;
+                    let drawW, drawH;
+                    if (vRatio > 1) { drawH = S.pipSize * 2 * S.camZoom; drawW = drawH * vRatio; }
+                    else { drawW = S.pipSize * 2 * S.camZoom; drawH = drawW / vRatio; }
+                    const pxOff = (S.camPanX / 100) * (drawW / 2); const pyOff = (S.camPanY / 100) * (drawH / 2);
+
+                    drawCameraFeed(ctx, cameraVideo, -drawW / 2 - pxOff, -drawH / 2 + pyOff, drawW, drawH, S.effect);
+                    ctx.restore();
+
+                    if (S.pipBorderWidth > 0) {
+                        ctx.beginPath(); ctx.arc(pipX, pipY, S.pipSize, 0, Math.PI * 2);
+                        ctx.lineWidth = S.pipBorderWidth; ctx.strokeStyle = S.pipBorderColor; ctx.stroke();
+                    }
                 }
             }
 
@@ -3492,72 +3785,39 @@
             // Draw Custom Dynamic Hovering Cursor Overlay Directly onto Preview Frame
             if (!forceCamera && isWhiteboardActive && recordedMousePos.isOverCanvas) {
                 ctx.save();
-
                 let cursorColor = getActiveColor();
                 let mx = recordedMousePos.x;
                 let my = recordedMousePos.y;
                 let cSize = 25;
 
-                if (usePip && (isHoveringPip || isDraggingPip)) {
-                    const isGrabbing = isDraggingPip;
-                    ctx.translate(mx - (cSize / 2), my - (cSize / 2));
-                    let scale = cSize / 512;
-                    ctx.scale(scale, scale);
+                const drawCustomCursorTools = ['pen1', 'pen2', 'highlighter', 'stroke-eraser', 'pixel-eraser'];
+                const isPipInteraction = usePip && (isHoveringPip || isDraggingPip);
 
-                    let handPath;
-                    if (isGrabbing) {
-                        handPath = new Path2D("M128 176c0-26.5 21.5-48 48-48s48 21.5 48 48v80c0 8.8 7.2 16 16 16s16-7.2 16-16v-112c0-26.5 21.5-48 48-48s48 21.5 48 48v112c0 8.8 7.2 16 16 16s16-7.2 16-16V64c0-26.5 21.5-48 48-48s48 21.5 48 48v224c0 8.8 7.2 16 16 16s16-7.2 16-16v-80c0-26.5 21.5-48 48-48s48 21.5 48 48v176c0 106-86 192-192 192h-48c-84.9 0-155.6-55.1-180.2-131l-35.3-106c-8.5-25.4 5.2-53.1 30.6-61.6s53.1 5.2 61.6 30.6l15.3 46V176z");
+                // Only draw the heavy graphical SVG cursors for pens and erasers
+                if (drawCustomCursorTools.includes(S.wbTool) && !isPipInteraction) {
+                    if (S.wbTool === 'pixel-eraser' || S.wbTool === 'stroke-eraser') {
+                        ctx.translate(mx, my - cSize);
+                        let scale = cSize / 512;
+                        ctx.scale(scale, scale);
+                        let eraserPath = new Path2D("M290.7 57.4L57.4 290.7c-25 25-25 65.5 0 90.5l80 80c12 12 28.3 18.7 45.3 18.7H288h9.4H512c17.7 0 32-14.3 32-32s-14.3-32-32-32H387.9L518.6 285.3c25-25 25-65.5 0-90.5L381.3 57.4c-25-25-65.5-25-90.5 0zM297.4 416H288l-105.4 0-80-80L227.3 211.3 364.7 348.7 297.4 416z");
+
+                        if (S.wbTool === 'stroke-eraser') {
+                            ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 40; ctx.setLineDash([60, 30]); ctx.stroke(eraserPath);
+                        } else {
+                            ctx.fillStyle = '#ff4444'; ctx.fill(eraserPath); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 12; ctx.stroke(eraserPath);
+                        }
+                    } else if (S.wbTool === 'highlighter') {
+                        ctx.translate(mx + 2, my - cSize + 2);
+                        let scale = cSize / 16; ctx.scale(scale, scale);
+                        let highlighterPath = new Path2D("M11.096.644a2 2 0 0 1 2.791.036l1.433 1.433a2 2 0 0 1 .035 2.791l-.413.435-8.07 8.995a.5.5 0 0 1-.372.166h-3a.5.5 0 0 1-.234-.058l-.412.412A.5.5 0 0 1 2.5 15h-2a.5.5 0 0 1-.354-.854l1.412-1.412A.5.5 0 0 1 1.5 12.5v-3a.5.5 0 0 1 .166-.372l8.995-8.07zm-.115 1.47L2.727 9.52l3.753 3.753 7.406-8.254zm3.585 2.17.064-.068a1 1 0 0 0-.017-1.396L13.18 1.387a1 1 0 0 0-1.396-.018l-.068.065zM5.293 13.5 2.5 10.707v1.586L3.707 13.5z");
+                        ctx.fillStyle = cursorColor; ctx.fill(highlighterPath);
                     } else {
-                        handPath = new Path2D("M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V240c0 8.8-7.2 16-16 16s-16-7.2-16-16V56c0-17.7-14.3-32-32-32s-32 14.3-32 32V240c0 8.8-7.2 16-16 16s-16-7.2-16-16V88c0-17.7-14.3-32-32-32s-32 14.3-32 32V240c0 8.8-7.2 16-16 16s-16-7.2-16-16V152c0-17.7-14.3-32-32-32s-32 14.3-32 32v218.4c0 14.5 1.5 29 4.3 43.1l20.1 100.5C41 498.4 72.3 512 106.8 512H216c92.8 0 168-75.2 168-168V216c0-17.7-14.3-32-32-32s-32 14.3-32 32V240c0 8.8-7.2 16-16 16s-16-7.2-16-16V32z");
+                        ctx.translate(mx, my - cSize);
+                        let scale = cSize / 512; ctx.scale(scale, scale);
+                        let penPath = new Path2D("M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0z");
+                        ctx.fillStyle = cursorColor; ctx.fill(penPath); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 20; ctx.stroke(penPath);
                     }
-
-                    ctx.fillStyle = "#ffffff";
-                    ctx.fill(handPath);
-                    ctx.strokeStyle = "#0f172a";
-                    ctx.lineWidth = 24;
-                    ctx.stroke(handPath);
-
-                } else if (S.wbTool === 'hand') {
-                    const isGrabbing = isPanning || movingStroke;
-                    ctx.translate(mx - (cSize / 2), my - (cSize / 2));
-                    let scale = cSize / 512;
-                    ctx.scale(scale, scale);
-
-                    let handPath = isGrabbing ?
-                        new Path2D("M128 176c0-26.5 21.5-48 48-48s48 21.5 48 48v80c0 8.8 7.2 16 16 16s16-7.2 16-16v-112c0-26.5 21.5-48 48-48s48 21.5 48 48v112c0 8.8 7.2 16 16 16s16-7.2 16-16V64c0-26.5 21.5-48 48-48s48 21.5 48 48v224c0 8.8 7.2 16 16 16s16-7.2 16-16v-80c0-26.5 21.5-48 48-48s48 21.5 48 48v176c0 106-86 192-192 192h-48c-84.9 0-155.6-55.1-180.2-131l-35.3-106c-8.5-25.4 5.2-53.1 30.6-61.6s53.1 5.2 61.6 30.6l15.3 46V176z") :
-                        new Path2D("M288 32c0-17.7-14.3-32-32-32s-32 14.3-32 32V240c0 8.8-7.2 16-16 16s-16-7.2-16-16V56c0-17.7-14.3-32-32-32s-32 14.3-32 32V240c0 8.8-7.2 16-16 16s-16-7.2-16-16V88c0-17.7-14.3-32-32-32s-32 14.3-32 32V240c0 8.8-7.2 16-16 16s-16-7.2-16-16V152c0-17.7-14.3-32-32-32s-32 14.3-32 32v218.4c0 14.5 1.5 29 4.3 43.1l20.1 100.5C41 498.4 72.3 512 106.8 512H216c92.8 0 168-75.2 168-168V216c0-17.7-14.3-32-32-32s-32 14.3-32 32V240c0 8.8-7.2 16-16 16s-16-7.2-16-16V32z");
-
-                    ctx.fillStyle = "#ffffff";
-                    ctx.fill(handPath);
-                    ctx.strokeStyle = "#0f172a";
-                    ctx.lineWidth = 24;
-                    ctx.stroke(handPath);
-
-                } else if (S.wbTool === 'pixel-eraser' || S.wbTool === 'stroke-eraser') {
-                    ctx.translate(mx, my - cSize);
-                    let scale = cSize / 512;
-                    ctx.scale(scale, scale);
-                    let eraserPath = new Path2D("M290.7 57.4L57.4 290.7c-25 25-25 65.5 0 90.5l80 80c12 12 28.3 18.7 45.3 18.7H288h9.4H512c17.7 0 32-14.3 32-32s-14.3-32-32-32H387.9L518.6 285.3c25-25 25-65.5 0-90.5L381.3 57.4c-25-25-65.5-25-90.5 0zM297.4 416H288l-105.4 0-80-80L227.3 211.3 364.7 348.7 297.4 416z");
-
-                    if (S.wbTool === 'stroke-eraser') {
-                        ctx.strokeStyle = '#ff4444'; ctx.lineWidth = 40; ctx.setLineDash([60, 30]); ctx.stroke(eraserPath);
-                    } else {
-                        ctx.fillStyle = '#ff4444'; ctx.fill(eraserPath); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 12; ctx.stroke(eraserPath);
-                    }
-
-                } else if (S.wbTool === 'highlighter') {
-                    ctx.translate(mx + 2, my - cSize + 2);
-                    let scale = cSize / 16; ctx.scale(scale, scale);
-                    let highlighterPath = new Path2D("M11.096.644a2 2 0 0 1 2.791.036l1.433 1.433a2 2 0 0 1 .035 2.791l-.413.435-8.07 8.995a.5.5 0 0 1-.372.166h-3a.5.5 0 0 1-.234-.058l-.412.412A.5.5 0 0 1 2.5 15h-2a.5.5 0 0 1-.354-.854l1.412-1.412A.5.5 0 0 1 1.5 12.5v-3a.5.5 0 0 1 .166-.372l8.995-8.07zm-.115 1.47L2.727 9.52l3.753 3.753 7.406-8.254zm3.585 2.17.064-.068a1 1 0 0 0-.017-1.396L13.18 1.387a1 1 0 0 0-1.396-.018l-.068.065zM5.293 13.5 2.5 10.707v1.586L3.707 13.5z");
-                    ctx.fillStyle = cursorColor; ctx.fill(highlighterPath);
-
-                } else {
-                    ctx.translate(mx, my - cSize);
-                    let scale = cSize / 512; ctx.scale(scale, scale);
-                    let penPath = new Path2D("M410.3 231l11.3-11.3-33.9-33.9-62.1-62.1L291.7 89.8l-11.3 11.3-22.6 22.6L58.6 322.9c-10.4 10.4-18 23.3-22.2 37.4L1 480.7c-2.5 8.4-.2 17.5 6.1 23.7s15.3 8.5 23.7 6.1l120.3-35.4c14.1-4.2 27-11.8 37.4-22.2L387.7 253.7 410.3 231zM160 399.4l-9.1 22.7c-4 3.1-8.5 5.4-13.3 6.9L59.4 452l23-78.1c1.4-4.9 3.8-9.4 6.9-13.3l22.7-9.1v32c0 8.8 7.2 16 16 16h32zM362.7 18.7L348.3 33.2 325.7 55.8 314.3 67.1l33.9 33.9 62.1 62.1 33.9 33.9 11.3-11.3 22.6-22.6 14.5-14.5c25-25 25-65.5 0-90.5L453.3 18.7c-25-25-65.5-25-90.5 0z");
-                    ctx.fillStyle = cursorColor; ctx.fill(penPath); ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 20; ctx.stroke(penPath);
                 }
-
                 ctx.restore();
             }
 
@@ -3857,7 +4117,7 @@
         function handleBoardDeletePage() {
             // 1. Guard against erasing the baseline canvas layer
             if (totalBoardPages <= 1) {
-                showToast("Cannot delete: Your board must contain at least 1 page.", "error");
+                showToast("Your board must contain at least 1 page.", "error");
                 return;
             }
 
@@ -4025,7 +4285,7 @@
             recordedMousePos.isOverCanvas = true;
 
             const forceCamera = (S.wbTool === 'pointer');
-            const usePip = !forceCamera && (isScreenRecording || isWhiteboardActive || isPdfActive);
+            const usePip = !forceCamera && (isScreenRecording || isWhiteboardActive || isPdfActive) && !pipWindow;
             isHoveringPip = false;
 
             if (usePip && !isDraggingPip && !isDrawing) {
@@ -4284,7 +4544,7 @@
 
             } catch (err) {
                 if (err.name !== 'AbortError') { // Ignore if the user just canceled the save dialog window
-                    showToast('Failed to start recording pipeline.', 'error');
+                    showToast('Failed to start recording.', 'error');
                     console.error("Mediabunny Initialization Error:", err);
                 }
             }
@@ -4404,7 +4664,7 @@
 
                 // CRITICAL FIX: If they choose Presenter Focus but the camera is blocked or uninitialized, ask again!
                 if (chosenTool === 'pointer' && (!cameraStream || videoSelect.value === "REQUEST_PERMISSION")) {
-                    showToast("Requesting camera access for Presenter Focus view...", "info");
+                    showToast("Requesting camera access...", "info");
                     try {
                         // Trigger a lightweight native browser prompt
                         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -4416,9 +4676,9 @@
                         // Attempt a full widescreen stream mount initialization
                         await updateCameraStream();
 
-                        showToast("Camera access granted successfully!", "success");
+                        showToast("Camera access granted!", "success");
                     } catch (err) {
-                        showToast("Could not activate camera view. Permission remains blocked.", "error");
+                        showToast("Could not activate camera. Permission denied.", "error");
                         // Reset the active dropdown value state to prevent execution loop crashes
                         if (videoSelect.value !== "REQUEST_PERMISSION") {
                             addHardwareFallbackOption(videoSelect, 'video');
@@ -4477,7 +4737,7 @@
         document.getElementById('snapshot-btn').addEventListener('click', () => {
             const a = document.createElement('a'); a.href = canvas.toDataURL('image/png');
             a.download = `Snapshot_${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
-            a.click(); showToast('Snapshot captured.', 'success');
+            a.click(); showToast('Screenshot captured.', 'success');
         });
 
         // Presentation Actions
@@ -4585,7 +4845,7 @@
                 printContainer.remove();
             }, 50);
 
-            showToast(`Sent ${pageDataURLs.length} views to print layer cleanly!`, 'success');
+            // showToast(`Board ${pageDataURLs.length} Saving !`, 'success');
         }
 
         // Drag & Drop Operations
