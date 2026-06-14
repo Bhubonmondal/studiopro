@@ -270,6 +270,59 @@
             background-color: transparent !important;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
+        /* ---------------------------------------------------
+           Tablet & Responsive Layout Overrides 
+           --------------------------------------------------- */
+        
+        /* Standard Tablets (e.g., iPad Landscape, <= 1024px) */
+        @media screen and (max-width: 1024px) {
+            /* Slim down the Left Sidebar */
+            aside.w-80 { width: 16rem !important; }
+            
+            /* Give the main canvas area more breathing room */
+            main { padding: 1rem !important; }
+            
+            /* Shrink the Right Sidebar slightly */
+            aside.w-16 { width: 3.5rem !important; }
+            aside.w-16 > div.w-14 { width: 3rem !important; }
+            .tool-btn.w-10 { width: 2.5rem !important; height: 2.5rem !important; border-radius: 0.5rem !important; }
+            .w-10.h-px { width: 2.5rem !important; }
+            #wb-size-val, #wb-bg { width: 2.5rem !important; }
+        }
+
+        /* Smaller Tablets & Portrait Modes (<= 768px) */
+        @media screen and (max-width: 768px) {
+            /* Compress the Left Sidebar further */
+            aside.w-80 { width: 14rem !important; }
+            
+            /* Maximize canvas padding */
+            main { padding: 0.5rem !important; }
+            
+            /* Heavily shrink the Right Sidebar & Toolbar Elements */
+            aside.w-16 { width: 3rem !important; }
+            aside.w-16 > div.w-14 { width: 2.5rem !important; padding-left: 0.125rem !important; padding-right: 0.125rem !important; }
+            
+            /* Compress drawing tool buttons & icons */
+            .tool-btn.w-10 { width: 2.25rem !important; height: 2.25rem !important; }
+            .tool-btn i { font-size: 0.75rem !important; }
+            .tool-btn span { font-size: 6px !important; }
+            .w-10.h-px { width: 2rem !important; }
+            
+            /* Adjust the Color Picker & Ladder Size Box */
+            .w-8.h-8.rounded-xl { width: 1.75rem !important; height: 1.75rem !important; }
+            #wb-size-val, #wb-bg { width: 2.25rem !important; font-size: 8px !important; }
+
+            /* Scale down the bottom recording controls */
+            .absolute.bottom-1 { 
+                transform: translateX(-50%) scale(0.75) !important; 
+                bottom: 0.25rem !important; 
+                width: max-content !important;
+            }
+
+            /* Shift canvas controls up so they don't overlap with the bottom recording bar */
+            #board-page-controls { bottom: 4rem !important; transform: scale(0.8) !important; transform-origin: bottom right !important; }
+            #board-delete-control { bottom: 4rem !important; transform: scale(0.8) !important; transform-origin: bottom left !important; }
+        }
     </style>
 </head>
 
@@ -747,6 +800,18 @@
                     </div>
                 </button>
 
+                <button id="screen-record-controls-btn"
+                    class="w-full flex items-center justify-between bg-cyan-600/20 hover:bg-cyan-600/40 text-cyan-400 border border-cyan-500/30 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-clapperboard w-4 text-center"></i>
+                        Record Sidebars
+                    </span>
+                    <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="record-controls-toggle-track">
+                        <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200"
+                            id="record-controls-toggle-knob"></div>
+                    </div>
+                </button>
+
                 <div class="grid grid-cols-2 gap-2 pt-1">
                     <button id="mirror-btn"
                         class="flex flex-col items-center justify-center gap-1 bg-indigo-600 hover:bg-indigo-700 p-2 rounded-lg text-xs transition-colors border border-indigo-500 text-white">
@@ -771,7 +836,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
-                            3s Countdown Timer
+                            Timer Before Recording
                         </span>
                         <div class="w-8 h-4 bg-slate-800 rounded-full relative" id="countdown-toggle-track">
                             <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200"
@@ -1245,6 +1310,9 @@
         // Configuration
         let CANVAS_WIDTH = 1920;
         let CANVAS_HEIGHT = 1080;
+
+        let isRecordingWithControls = false;
+        let displayStreamForRecording = null;
 
         // DOM Elements
         const audioSelect = document.getElementById('audio-source');
@@ -3476,6 +3544,7 @@
         }
 
         function renderCanvas() {
+        
             const now = performance.now();
 
             // --- Inside renderCanvas() loop ---
@@ -4357,26 +4426,56 @@
             }
         });
 
-        uiCanvas.addEventListener('mouseleave', () => {
-            recordedMousePos.isOverCanvas = false;
-            isHoveringPip = false; isDraggingPip = false;
-            if (isDrawing || movingStroke) { pushHistory(); }
-            isDrawing = false; currentStroke = null; movingStroke = null; isPanning = false;
-            updateCursor();
-        });
-        window.addEventListener('mouseup', () => {
+        // Safely resets all drawing states when the user lifts their mouse/pen/finger
+        function handleInteractionEnd(e) {
             if (isDrawing || movingStroke) {
                 pushHistory();
             }
-            isDraggingPip = false; isDrawing = false;
-            currentStroke = null; movingStroke = null; isPanning = false;
+            isDraggingPip = false; 
+            isDrawing = false;
+            currentStroke = null; 
+            movingStroke = null; 
+            isPanning = false;
+
+            // CRITICAL FIX: If this was a touch event (stylus/finger), 
+            // force the canvas to hide the custom hover cursor.
+            if (e && e.type && e.type.startsWith('touch')) {
+                recordedMousePos.isOverCanvas = false;
+            }
+
             updateCursor();
+        }
+
+        uiCanvas.addEventListener('mouseleave', (e) => {
+            recordedMousePos.isOverCanvas = false;
+            isHoveringPip = false; 
+            handleInteractionEnd(e);
         });
 
+        // Bind the reset function to all possible ending scenarios natively
+        // Passing the event 'e' allows the function to know if it was a touch or mouse interaction
+        window.addEventListener('mouseup', handleInteractionEnd);
+        window.addEventListener('touchend', handleInteractionEnd);
+        window.addEventListener('touchcancel', handleInteractionEnd); 
+
         // Touch Mapping Support
-        uiCanvas.addEventListener('touchstart', (e) => { e.clientX = e.touches[0].clientX; e.clientY = e.touches[0].clientY; uiCanvas.dispatchEvent(new MouseEvent('mousedown', e)); e.preventDefault(); }, { passive: false });
-        uiCanvas.addEventListener('touchmove', (e) => { e.clientX = e.touches[0].clientX; e.clientY = e.touches[0].clientY; uiCanvas.dispatchEvent(new MouseEvent('mousemove', e)); e.preventDefault(); }, { passive: false });
-        uiCanvas.addEventListener('touchend', () => { window.dispatchEvent(new Event('mouseup')); });
+        uiCanvas.addEventListener('touchstart', (e) => { 
+            if (e.touches && e.touches.length > 0) {
+                e.clientX = e.touches[0].clientX; 
+                e.clientY = e.touches[0].clientY; 
+            }
+            uiCanvas.dispatchEvent(new MouseEvent('mousedown', e)); 
+            e.preventDefault(); 
+        }, { passive: false });
+        
+        uiCanvas.addEventListener('touchmove', (e) => { 
+            if (e.touches && e.touches.length > 0) {
+                e.clientX = e.touches[0].clientX; 
+                e.clientY = e.touches[0].clientY; 
+            }
+            uiCanvas.dispatchEvent(new MouseEvent('mousemove', e)); 
+            e.preventDefault(); 
+        }, { passive: false });
 
         // Recording Controls Setup
         function updateTimer() {
@@ -4444,7 +4543,7 @@
             // 1. Resume Audio Context if suspended
             if (audioContext && audioContext.state === 'suspended') audioContext.resume();
 
-            // 2. Countdown Logic (Kept exactly as you designed it)
+            // 2. Countdown Logic
             if (S.useCountdown) {
                 const overlay = document.getElementById('countdown-overlay');
                 const num = document.getElementById('countdown-number');
@@ -4452,35 +4551,76 @@
                 startBtn.disabled = true;
 
                 for (let i = 3; i > 0; i--) {
-                    num.textContent = i; num.style.transform = 'scale(0.5)'; num.style.opacity = '0';
-                    setTimeout(() => { num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; num.style.transform = 'scale(1)'; num.style.opacity = '1'; }, 50);
+                    num.textContent = i; 
+                    num.style.transform = 'scale(0.5)'; 
+                    num.style.opacity = '0';
+                    setTimeout(() => { 
+                        num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; 
+                        num.style.transform = 'scale(1)'; 
+                        num.style.opacity = '1'; 
+                    }, 50);
+                    
                     if (audioContext && audioContext.state === 'running') {
-                        const osc = audioContext.createOscillator(); const gain = audioContext.createGain();
-                        osc.connect(gain); gain.connect(audioContext.destination); osc.frequency.value = 800;
-                        gain.gain.setValueAtTime(0.05, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-                        osc.start(); osc.stop(audioContext.currentTime + 0.1);
+                        const osc = audioContext.createOscillator(); 
+                        const gain = audioContext.createGain();
+                        osc.connect(gain); 
+                        gain.connect(audioContext.destination); 
+                        osc.frequency.value = 800;
+                        gain.gain.setValueAtTime(0.05, audioContext.currentTime); 
+                        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
+                        osc.start(); 
+                        osc.stop(audioContext.currentTime + 0.1);
                     }
                     await new Promise(r => setTimeout(r, 1000));
                 }
-                overlay.classList.add('hidden'); startBtn.disabled = false;
+                overlay.classList.add('hidden'); 
+                startBtn.disabled = false;
             }
 
-            const targetFps = 30;
+            const targetFps = parseInt(fpsSelect.value) || 30;
 
-            // Explicitly bundle the video track with an advanced hints constraint map
-            const videoTrack = canvas.captureStream(targetFps).getVideoTracks()[0];
-            if (videoTrack.applyConstraints) {
-                videoTrack.applyConstraints({
-                    frameRate: { exact: targetFps }
-                }).catch(e => console.warn("Fixed Frame Constraints bypass warning:", e));
+            // 3. Declare our video bucket ONCE here
+            let videoTrack;
+
+            // 4. Fill the bucket based on the user's toggle choice
+            if (isRecordingWithControls) {
+                try {
+                    // Prompt user to select the screen/tab to record
+                    displayStreamForRecording = await navigator.mediaDevices.getDisplayMedia({
+                        video: {
+                            displaySurface: "browser", 
+                            frameRate: { ideal: targetFps }
+                        },
+                        audio: false, 
+                        preferCurrentTab: true
+                    });
+
+                    videoTrack = displayStreamForRecording.getVideoTracks()[0];
+
+                    // Stop recording automatically if user clicks "Stop sharing" on the browser popup
+                    videoTrack.onended = () => {
+                        if (isRecording) document.getElementById('stop-btn').click();
+                    };
+                } catch (err) {
+                    showToast("Screen capture canceled. Recording aborted.", "error");
+                    startBtn.disabled = false;
+                    return; // Exit if they cancel the prompt
+                }
+            } else {
+                // Default: Just record the clean canvas
+                videoTrack = canvas.captureStream(targetFps).getVideoTracks()[0];
+                if (videoTrack.applyConstraints) {
+                    videoTrack.applyConstraints({
+                        frameRate: { exact: targetFps }
+                    }).catch(e => console.warn("Fixed Frame Constraints bypass warning:", e));
+                }
             }
 
             // Capture the audio track from the hardware stream
             const audioTrack = audioStream ? audioStream.getAudioTracks()[0] : null;
 
             try {
-                // 3. Ask user where to save the file BEFORE recording starts
-                // (This allows Mediabunny to stream directly to their disk, saving RAM)
+                // 5. Ask user where to save the file BEFORE recording starts
                 let writableStream;
                 const filename = `StudioPro_${new Date().toISOString().replace(/[:.]/g, '-')}.mp4`;
 
@@ -4503,21 +4643,22 @@
                     writableStream = await handle.createWritable();
                 }
 
-                // 4. Initialize the Mediabunny Output Multiplexer
+                // 6. Initialize the Mediabunny Output Multiplexer
                 currentMediaOutput = new window.MB.Output({
                     // 'reserve' ensures the MOOV atom is placed at the very front for DaVinci Resolve!
                     format: new window.MB.Mp4OutputFormat(),
                     target: new window.MB.StreamTarget(writableStream)
                 });
 
-                // 5. Attach the Canvas Video Track (avc / H.264)
+                // 7. Attach the Video Track (avc / H.264)
                 const videoSource = new window.MB.MediaStreamVideoTrackSource(videoTrack, {
                     codec: 'avc',
-                    bitrate: 5_000_000 // 5 Mbps ensures crisp 1080p rendering
+                    bitrate: 5_000_000, // 5 Mbps ensures crisp 1080p rendering
+                    sizeChangeBehavior: 'contain'
                 });
                 currentMediaOutput.addVideoTrack(videoSource);
 
-                // 6. Attach the Microphone Audio Track (aac)
+                // 8. Attach the Microphone Audio Track (aac)
                 if (audioTrack && !isMuted) {
                     const audioSource = new window.MB.MediaStreamAudioTrackSource(audioTrack, {
                         codec: 'aac',
@@ -4526,26 +4667,43 @@
                     currentMediaOutput.addAudioTrack(audioSource);
                 }
 
-                // 7. Start the pipeline!
+                // 9. Start the pipeline!
                 await currentMediaOutput.start();
 
                 isPaused = false;
                 isRecording = true;
 
-                // 8. Update UI Elements
+                // 10. Update UI Elements
                 startBtn.classList.add('hidden');
                 pauseBtn.classList.remove('hidden'); pauseBtn.classList.add('flex'); pauseBtn.disabled = false;
                 stopBtn.classList.remove('hidden'); stopBtn.classList.add('flex'); stopBtn.disabled = false;
                 recordingIndicator.classList.remove('hidden'); recordingIndicator.classList.add('flex');
 
                 // Start Recording Timer
-                timerInterval = setInterval(() => { if (!isPaused) { secondsRecorded++; updateTimer(); } }, 1000);
-                // showToast('Recording started...', 'success');
+                timerInterval = setInterval(() => { 
+                    if (!isPaused) { 
+                        secondsRecorded++; 
+                        updateTimer(); 
+                    } 
+                }, 1000);
+                
+                showToast('Recording started...', 'success');
 
             } catch (err) {
-                if (err.name !== 'AbortError') { // Ignore if the user just canceled the save dialog window
+                // 1. If anything fails, kill the screen capture stream so the banner goes away!
+                if (typeof displayStreamForRecording !== 'undefined' && displayStreamForRecording) {
+                    displayStreamForRecording.getTracks().forEach(track => track.stop());
+                    displayStreamForRecording = null;
+                }
+
+                // 2. Re-enable the Start button so they can try again
+                startBtn.disabled = false;
+                
+                // 3. Handle the error messaging
+                if (err.name !== 'AbortError') { 
+                    // Ignore if the user just canceled the save dialog window, otherwise show error
                     showToast('Failed to start recording.', 'error');
-                    console.error("Mediabunny Initialization Error:", err);
+                    console.error("Recording Initialization Error:", err);
                 }
             }
         }
@@ -4655,6 +4813,28 @@
         });
         document.getElementById('screen-share-btn').addEventListener('click', toggleScreenShare);
 
+
+        document.getElementById('screen-record-controls-btn').addEventListener('click', () => {
+            // Toggle the boolean state
+            isRecordingWithControls = !isRecordingWithControls;
+
+            // Update the UI switch visually
+            updateToggleUI(
+                document.getElementById('record-controls-toggle-knob'),
+                document.getElementById('record-controls-toggle-track'),
+                isRecordingWithControls
+            );
+
+            // Optional: Let the user know what changed
+            if (isRecordingWithControls) {
+                showToast("Sidebars will be included in the recording.", "success");
+            } else {
+                // showToast("Canvas Only Recording Enabled.", "info");
+            }
+        });
+
+
+
         // Drawing Toolbar Clicks
         // Drawing Toolbar Click Router with Interactive Permission Recovery
         document.querySelectorAll('.tool-btn').forEach(btn => {
@@ -4739,6 +4919,8 @@
             a.download = `Snapshot_${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
             a.click(); showToast('Screenshot captured.', 'success');
         });
+
+
 
         // Presentation Actions
         document.getElementById('pdf-upload-btn').addEventListener('click', () => document.getElementById('pdf-upload').click());
@@ -5013,9 +5195,17 @@
                 stopBtn.disabled = true;
                 stopBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
 
+                // 1. Finalize and save the video file
                 await currentMediaOutput.finalize();
                 currentMediaOutput = null;
 
+                // 2. CRITICAL FIX: Kill the screen capture stream to dismiss the browser's "Stop sharing" banner
+                if (typeof displayStreamForRecording !== 'undefined' && displayStreamForRecording) {
+                    displayStreamForRecording.getTracks().forEach(track => track.stop());
+                    displayStreamForRecording = null;
+                }
+
+                // 3. Reset the UI
                 startBtn.classList.remove('hidden');
                 pauseBtn.classList.add('hidden'); pauseBtn.classList.remove('flex');
                 stopBtn.classList.add('hidden'); stopBtn.classList.remove('flex');
@@ -5044,6 +5234,8 @@
             syncColorPickerRing();
         });
         window.addEventListener('resize', resizeCanvases);
+
+
     </script>
 </body>
 
