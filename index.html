@@ -77,6 +77,11 @@
             user-select: none;
             /* Standard */
         }
+        #canvas-container > div.aspect-video {
+            width: 100% !important;
+            max-height: calc(100dvh - 2rem) !important;
+            max-width: min(100%, calc((100dvh - 2rem) * 16 / 9)) !important;
+        }
         #canvas-container > div {
             max-height: calc(100dvh - 2rem) !important;
         }
@@ -275,58 +280,105 @@
             background-color: transparent !important;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
-        /* ---------------------------------------------------
-           Tablet & Responsive Layout Overrides 
-           --------------------------------------------------- */
+
         
-        /* Standard Tablets (e.g., iPad Landscape, <= 1024px) */
-        @media screen and (max-width: 1024px) {
-            .absolute.bottom-1 {
-                bottom: 1.5rem !important; /* Pulls the recording bar safely away from the bottom edge */
-                transform: translateX(-50%) scale(0.85) !important; 
-                width: max-content !important;
-                z-index: 50 !important; /* Ensure it floats above the canvas */
-            }
 
-            /* Shift the board page controls and delete button up to avoid overlap */
-            #board-page-controls, #board-delete-control { 
-                bottom: 5rem !important; 
-            }
-        }
 
-        /* Smaller Tablets & Portrait Modes (<= 768px) */
-        @media screen and (max-width: 768px) {
-            /* Compress the Left Sidebar further */
-            aside.w-80 { width: 14rem !important; }
+        @media screen and (max-width: 1366px) {
             
-            /* Maximize canvas padding */
+            /* --- LEFT SIDEBAR (Slimmed down) --- */
+            aside.w-80 { 
+                width: 16rem !important; 
+                min-width: 16rem !important; 
+            }
+            .p-5 { padding: 1rem !important; }
+            
+            /* --- MAIN CANVAS AREA (More breathing room) --- */
             main { padding: 0.5rem !important; }
             
-            /* Heavily shrink the Right Sidebar & Toolbar Elements */
-            aside.w-16 { width: 3rem !important; }
-            aside.w-16 > div.w-14 { width: 2.5rem !important; padding-left: 0.125rem !important; padding-right: 0.125rem !important; }
+            /* --- RIGHT TOOLBAR (Fixing the overflowing text/broken UI) --- */
+            aside.w-16 { 
+                width: 4rem !important; 
+                min-width: 4rem !important;
+            }
+            aside.w-16 > div.w-14 { 
+                width: 3.5rem !important; 
+            }
             
-            /* Compress drawing tool buttons & icons */
-            .tool-btn.w-10 { width: 2.25rem !important; height: 2.25rem !important; }
-            .tool-btn i { font-size: 0.75rem !important; }
-            .tool-btn span { font-size: 6px !important; }
-            .w-10.h-px { width: 2rem !important; }
+            /* CRITICAL FIX: Cleanly hide all tiny text spans (Move, Stroke, Board Color) */
+            aside.w-16 span { 
+                display: none !important; 
+            }
             
-            /* Adjust the Color Picker & Ladder Size Box */
-            .w-8.h-8.rounded-xl { width: 1.75rem !important; height: 1.75rem !important; }
-            #wb-size-val, #wb-bg { width: 2.25rem !important; font-size: 8px !important; }
-
-            /* Scale down the bottom recording controls */
-            .absolute.bottom-1 { 
-                transform: translateX(-50%) scale(0.75) !important; 
-                bottom: 0.25rem !important; 
-                width: max-content !important;
+            /* Shrink the tool buttons to fit the narrower bar perfectly */
+            .tool-btn.w-10 { 
+                width: 2.5rem !important; 
+                height: 2.5rem !important; 
+                border-radius: 0.5rem !important;
+            }
+            
+            /* Re-center the icons since the text below them is gone */
+            .tool-btn i { 
+                font-size: 1.1rem !important; 
+                margin: 0 !important; 
+            }
+            
+            /* Adjust dividers & color picker */
+            .w-10.h-px { width: 2.5rem !important; margin: 0.25rem 0 !important; }
+            .w-8.h-8.rounded-xl { 
+                width: 1.75rem !important; 
+                height: 1.75rem !important; 
+            }
+            
+            /* Adjust size ladder & inputs */
+            .h-16.flex.flex-col { height: 3.5rem !important; }
+            .w-8.h-16.flex { width: 1.5rem !important; height: 3.5rem !important; }
+            
+            #wb-size-val { 
+                width: 3rem !important; 
+                font-size: 11px !important; 
+                padding: 0.2rem !important; 
+            }
+            
+            #wb-bg { 
+                width: 3rem !important; 
+                font-size: 10px !important; 
+                padding: 0 !important;
             }
 
-            /* Shift canvas controls up so they don't overlap with the bottom recording bar */
-            #board-page-controls { bottom: 4rem !important; transform: scale(0.8) !important; transform-origin: bottom right !important; }
-            #board-delete-control { bottom: 4rem !important; transform: scale(0.8) !important; transform-origin: bottom left !important; }
+            /* --- BOTTOM RECORDING BAR --- */
+            .absolute.bottom-1 {
+                bottom: 1rem !important; 
+                transform: translateX(-50%) scale(0.85) !important; 
+                width: max-content !important;
+                z-index: 50 !important; 
+            }
+
+            /* Shift the board page controls and delete button up safely */
+            #board-page-controls { bottom: 4rem !important; right: 1rem !important; }
+            #board-delete-control { bottom: 4rem !important; left: 1rem !important; }
         }
+
+        /* 3. Small Tablets & Mobile Phones (Portrait constraints) */
+        @media screen and (max-width: 768px) {
+            aside.w-80 { 
+                width: 13rem !important; 
+                min-width: 13rem !important; 
+            }
+            aside.w-80 * { font-size: 0.75rem !important; }
+            
+            /* Shrink right bar even more for phones */
+            aside.w-16 { width: 3.25rem !important; min-width: 3.25rem !important; }
+            aside.w-16 > div.w-14 { width: 2.75rem !important; }
+            .tool-btn.w-10 { width: 2rem !important; height: 2rem !important; }
+            .tool-btn i { font-size: 0.9rem !important; }
+            
+            .absolute.bottom-1 { transform: translateX(-50%) scale(0.75) !important; bottom: 0.5rem !important;}
+        }
+
+        
+
+        
     </style>
 </head>
 
@@ -967,18 +1019,13 @@
                 </div>
 
                 <!-- Page Navigation Cluster (Bottom Right) -->
-                <div id="board-page-controls"
+               <div id="board-page-controls"
                     class="absolute bottom-3 right-3 z-30 bg-slate-800/90 backdrop-blur border border-slate-700 px-2 py-1 rounded-lg flex items-center gap-2 select-none shadow-xl scale-90 origin-bottom-right">
-                    <button id="board-prev-btn"
-                        class="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700"
-                        title="Previous Page">
+                    <button id="board-prev-btn" class="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700" title="Previous Page">
                         <i class="fa-solid fa-chevron-left text-xs"></i>
                     </button>
-                    <span id="board-page-indicator"
-                        class="text-xs font-mono font-bold text-slate-300 tracking-wide min-w-[32px] text-center">1/1</span>
-                    <button id="board-next-btn"
-                        class="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700"
-                        title="Next Page">
+                    <span id="board-page-indicator" class="text-xs font-mono font-bold text-slate-300 tracking-wide min-w-[32px] text-center">1/1</span>
+                    <button id="board-next-btn" class="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700" title="Next Page">
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                 </div>
@@ -1019,12 +1066,10 @@
 
         </div>
         <div id="board-delete-control" class="absolute bottom-3 left-3 z-30 select-none scale-90 origin-bottom-left">
-            <button id="board-delete-btn"
-                class="bg-slate-800/90 hover:bg-red-900/40 text-slate-400 hover:text-red-400 backdrop-blur border border-slate-700 hover:border-red-500/30 w-8 h-8 flex items-center justify-center rounded-lg shadow-xl transition-all"
-                title="Delete Current Page">
-                <i class="fa-solid fa-trash-can text-xs"></i>
-            </button>
-        </div>
+                    <button id="board-delete-btn" class="bg-slate-800/90 hover:bg-red-900/40 text-slate-400 hover:text-red-400 backdrop-blur border border-slate-700 hover:border-red-500/30 w-8 h-8 flex items-center justify-center rounded-lg shadow-xl transition-all" title="Delete Current Page">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                </div>
 
     </main>
 
