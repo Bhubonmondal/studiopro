@@ -62,7 +62,7 @@
         }
 
         body {
-            height: 100dvh !important; 
+            height: 100dvh !important;
             min-height: 100dvh !important;
             font-family: 'Inter', sans-serif;
             background-color: #0f172a;
@@ -77,12 +77,14 @@
             user-select: none;
             /* Standard */
         }
-        #canvas-container > div.aspect-video {
+
+        #canvas-container>div.aspect-video {
             width: 100% !important;
             max-height: calc(100dvh - 2rem) !important;
             max-width: min(100%, calc((100dvh - 2rem) * 16 / 9)) !important;
         }
-        #canvas-container > div {
+
+        #canvas-container>div {
             max-height: calc(100dvh - 2rem) !important;
         }
 
@@ -281,104 +283,142 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
         }
 
-        
+
 
 
         @media screen and (max-width: 1366px) {
-            
+
             /* --- LEFT SIDEBAR (Slimmed down) --- */
-            aside.w-80 { 
-                width: 16rem !important; 
-                min-width: 16rem !important; 
+            aside.w-80 {
+                width: 16rem !important;
+                min-width: 16rem !important;
             }
-            .p-5 { padding: 1rem !important; }
-            
+
+            .p-5 {
+                padding: 1rem !important;
+            }
+
             /* --- MAIN CANVAS AREA (More breathing room) --- */
-            main { padding: 0.5rem !important; }
-            
+            main {
+                padding: 0.5rem !important;
+            }
+
             /* --- RIGHT TOOLBAR (Fixing the overflowing text/broken UI) --- */
-            aside.w-16 { 
-                width: 4rem !important; 
+            aside.w-16 {
+                width: 4rem !important;
                 min-width: 4rem !important;
             }
-            aside.w-16 > div.w-14 { 
-                width: 3.5rem !important; 
+
+            aside.w-16>div.w-14 {
+                width: 3.5rem !important;
             }
-            
+
             /* CRITICAL FIX: Cleanly hide all tiny text spans (Move, Stroke, Board Color) */
-            aside.w-16 span { 
-                display: none !important; 
+            aside.w-16 span {
+                display: none !important;
             }
-            
+
             /* Shrink the tool buttons to fit the narrower bar perfectly */
-            .tool-btn.w-10 { 
-                width: 2.5rem !important; 
-                height: 2.5rem !important; 
+            .tool-btn.w-10 {
+                width: 2.5rem !important;
+                height: 2.5rem !important;
                 border-radius: 0.5rem !important;
             }
-            
+
             /* Re-center the icons since the text below them is gone */
-            .tool-btn i { 
-                font-size: 1.1rem !important; 
-                margin: 0 !important; 
+            .tool-btn i {
+                font-size: 1.1rem !important;
+                margin: 0 !important;
             }
-            
+
             /* Adjust dividers & color picker */
-            .w-10.h-px { width: 2.5rem !important; margin: 0.25rem 0 !important; }
-            .w-8.h-8.rounded-xl { 
-                width: 1.75rem !important; 
-                height: 1.75rem !important; 
+            .w-10.h-px {
+                width: 2.5rem !important;
+                margin: 0.25rem 0 !important;
             }
-            
+
+            .w-8.h-8.rounded-xl {
+                width: 1.75rem !important;
+                height: 1.75rem !important;
+            }
+
             /* Adjust size ladder & inputs */
-            .h-16.flex.flex-col { height: 3.5rem !important; }
-            .w-8.h-16.flex { width: 1.5rem !important; height: 3.5rem !important; }
-            
-            #wb-size-val { 
-                width: 3rem !important; 
-                font-size: 11px !important; 
-                padding: 0.2rem !important; 
+            .h-16.flex.flex-col {
+                height: 3.5rem !important;
             }
-            
-            #wb-bg { 
-                width: 3rem !important; 
-                font-size: 10px !important; 
+
+            .w-8.h-16.flex {
+                width: 1.5rem !important;
+                height: 3.5rem !important;
+            }
+
+            #wb-size-val {
+                width: 3rem !important;
+                font-size: 11px !important;
+                padding: 0.2rem !important;
+            }
+
+            #wb-bg {
+                width: 3rem !important;
+                font-size: 10px !important;
                 padding: 0 !important;
             }
 
             /* --- BOTTOM RECORDING BAR --- */
             .absolute.bottom-1 {
-                bottom: 1rem !important; 
-                transform: translateX(-50%) scale(0.85) !important; 
+                bottom: 1rem !important;
+                transform: translateX(-50%) scale(0.85) !important;
                 width: max-content !important;
-                z-index: 50 !important; 
+                z-index: 50 !important;
             }
 
             /* Shift the board page controls and delete button up safely */
-            #board-page-controls { bottom: 4rem !important; right: 1rem !important; }
-            #board-delete-control { bottom: 4rem !important; left: 1rem !important; }
+            #board-page-controls {
+                bottom: 4.5rem !important;
+                right: 1.5rem !important;
+            }
+
+            #board-delete-control {
+                bottom: 4.5rem !important;
+                left: 1.5rem !important;
+            }
         }
 
         /* 3. Small Tablets & Mobile Phones (Portrait constraints) */
         @media screen and (max-width: 768px) {
-            aside.w-80 { 
-                width: 13rem !important; 
-                min-width: 13rem !important; 
+            aside.w-80 {
+                width: 13rem !important;
+                min-width: 13rem !important;
             }
-            aside.w-80 * { font-size: 0.75rem !important; }
-            
+
+            aside.w-80 * {
+                font-size: 0.75rem !important;
+            }
+
             /* Shrink right bar even more for phones */
-            aside.w-16 { width: 3.25rem !important; min-width: 3.25rem !important; }
-            aside.w-16 > div.w-14 { width: 2.75rem !important; }
-            .tool-btn.w-10 { width: 2rem !important; height: 2rem !important; }
-            .tool-btn i { font-size: 0.9rem !important; }
-            
-            .absolute.bottom-1 { transform: translateX(-50%) scale(0.75) !important; bottom: 0.5rem !important;}
+            aside.w-16 {
+                width: 3.25rem !important;
+                min-width: 3.25rem !important;
+            }
+
+            aside.w-16>div.w-14 {
+                width: 2.75rem !important;
+            }
+
+            .tool-btn.w-10 {
+                width: 2rem !important;
+                height: 2rem !important;
+            }
+
+            .tool-btn i {
+                font-size: 0.9rem !important;
+            }
+
+            .absolute.bottom-1 {
+                transform: translateX(-50%) scale(0.75) !important;
+                bottom: 0.5rem !important;
+            }
         }
-
-        
-
-        
     </style>
 </head>
 
@@ -1019,13 +1059,18 @@
                 </div>
 
                 <!-- Page Navigation Cluster (Bottom Right) -->
-               <div id="board-page-controls"
+                <div id="board-page-controls"
                     class="absolute bottom-3 right-3 z-30 bg-slate-800/90 backdrop-blur border border-slate-700 px-2 py-1 rounded-lg flex items-center gap-2 select-none shadow-xl scale-90 origin-bottom-right">
-                    <button id="board-prev-btn" class="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700" title="Previous Page">
+                    <button id="board-prev-btn"
+                        class="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700"
+                        title="Previous Page">
                         <i class="fa-solid fa-chevron-left text-xs"></i>
                     </button>
-                    <span id="board-page-indicator" class="text-xs font-mono font-bold text-slate-300 tracking-wide min-w-[32px] text-center">1/1</span>
-                    <button id="board-next-btn" class="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700" title="Next Page">
+                    <span id="board-page-indicator"
+                        class="text-xs font-mono font-bold text-slate-300 tracking-wide min-w-[32px] text-center">1/1</span>
+                    <button id="board-next-btn"
+                        class="text-slate-400 hover:text-white transition-colors w-6 h-6 flex items-center justify-center rounded hover:bg-slate-700"
+                        title="Next Page">
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
                 </div>
@@ -1066,10 +1111,12 @@
 
         </div>
         <div id="board-delete-control" class="absolute bottom-3 left-3 z-30 select-none scale-90 origin-bottom-left">
-                    <button id="board-delete-btn" class="bg-slate-800/90 hover:bg-red-900/40 text-slate-400 hover:text-red-400 backdrop-blur border border-slate-700 hover:border-red-500/30 w-8 h-8 flex items-center justify-center rounded-lg shadow-xl transition-all" title="Delete Current Page">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
-                    </button>
-                </div>
+            <button id="board-delete-btn"
+                class="bg-slate-800/90 hover:bg-red-900/40 text-slate-400 hover:text-red-400 backdrop-blur border border-slate-700 hover:border-red-500/30 w-8 h-8 flex items-center justify-center rounded-lg shadow-xl transition-all"
+                title="Delete Current Page">
+                <i class="fa-solid fa-trash-can text-xs"></i>
+            </button>
+        </div>
 
     </main>
 
@@ -2244,11 +2291,22 @@
 
         document.getElementById('bg-image-uploader').addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    loadBgImage(event.target.result);
+                const file = e.target.files[0];
+                const url = URL.createObjectURL(file);
+
+                const img = new Image();
+                img.onload = () => {
+                    // Draw the image to a temporary canvas to safely extract the Base64 string
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    canvas.getContext('2d').drawImage(img, 0, 0);
+
+                    // Pass the extracted data URL and clean up memory
+                    loadBgImage(canvas.toDataURL(file.type));
+                    URL.revokeObjectURL(url);
                 };
-                reader.readAsDataURL(e.target.files[0]);
+                img.src = url;
             }
             e.target.value = '';
         });
@@ -3593,7 +3651,7 @@
         }
 
         function renderCanvas() {
-        
+
             const now = performance.now();
 
             // --- Inside renderCanvas() loop ---
@@ -4480,10 +4538,10 @@
             if (isDrawing || movingStroke) {
                 pushHistory();
             }
-            isDraggingPip = false; 
+            isDraggingPip = false;
             isDrawing = false;
-            currentStroke = null; 
-            movingStroke = null; 
+            currentStroke = null;
+            movingStroke = null;
             isPanning = false;
 
             // CRITICAL FIX: If this was a touch event (stylus/finger), 
@@ -4497,7 +4555,7 @@
 
         uiCanvas.addEventListener('mouseleave', (e) => {
             recordedMousePos.isOverCanvas = false;
-            isHoveringPip = false; 
+            isHoveringPip = false;
             handleInteractionEnd(e);
         });
 
@@ -4505,25 +4563,25 @@
         // Passing the event 'e' allows the function to know if it was a touch or mouse interaction
         window.addEventListener('mouseup', handleInteractionEnd);
         window.addEventListener('touchend', handleInteractionEnd);
-        window.addEventListener('touchcancel', handleInteractionEnd); 
+        window.addEventListener('touchcancel', handleInteractionEnd);
 
         // Touch Mapping Support
-        uiCanvas.addEventListener('touchstart', (e) => { 
+        uiCanvas.addEventListener('touchstart', (e) => {
             if (e.touches && e.touches.length > 0) {
-                e.clientX = e.touches[0].clientX; 
-                e.clientY = e.touches[0].clientY; 
+                e.clientX = e.touches[0].clientX;
+                e.clientY = e.touches[0].clientY;
             }
-            uiCanvas.dispatchEvent(new MouseEvent('mousedown', e)); 
-            e.preventDefault(); 
+            uiCanvas.dispatchEvent(new MouseEvent('mousedown', e));
+            e.preventDefault();
         }, { passive: false });
-        
-        uiCanvas.addEventListener('touchmove', (e) => { 
+
+        uiCanvas.addEventListener('touchmove', (e) => {
             if (e.touches && e.touches.length > 0) {
-                e.clientX = e.touches[0].clientX; 
-                e.clientY = e.touches[0].clientY; 
+                e.clientX = e.touches[0].clientX;
+                e.clientY = e.touches[0].clientY;
             }
-            uiCanvas.dispatchEvent(new MouseEvent('mousemove', e)); 
-            e.preventDefault(); 
+            uiCanvas.dispatchEvent(new MouseEvent('mousemove', e));
+            e.preventDefault();
         }, { passive: false });
 
         // Recording Controls Setup
@@ -4600,29 +4658,29 @@
                 startBtn.disabled = true;
 
                 for (let i = 3; i > 0; i--) {
-                    num.textContent = i; 
-                    num.style.transform = 'scale(0.5)'; 
+                    num.textContent = i;
+                    num.style.transform = 'scale(0.5)';
                     num.style.opacity = '0';
-                    setTimeout(() => { 
-                        num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'; 
-                        num.style.transform = 'scale(1)'; 
-                        num.style.opacity = '1'; 
+                    setTimeout(() => {
+                        num.style.transition = 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                        num.style.transform = 'scale(1)';
+                        num.style.opacity = '1';
                     }, 50);
-                    
+
                     if (audioContext && audioContext.state === 'running') {
-                        const osc = audioContext.createOscillator(); 
+                        const osc = audioContext.createOscillator();
                         const gain = audioContext.createGain();
-                        osc.connect(gain); 
-                        gain.connect(audioContext.destination); 
+                        osc.connect(gain);
+                        gain.connect(audioContext.destination);
                         osc.frequency.value = 800;
-                        gain.gain.setValueAtTime(0.05, audioContext.currentTime); 
+                        gain.gain.setValueAtTime(0.05, audioContext.currentTime);
                         gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.1);
-                        osc.start(); 
+                        osc.start();
                         osc.stop(audioContext.currentTime + 0.1);
                     }
                     await new Promise(r => setTimeout(r, 1000));
                 }
-                overlay.classList.add('hidden'); 
+                overlay.classList.add('hidden');
                 startBtn.disabled = false;
             }
 
@@ -4637,10 +4695,10 @@
                     // Prompt user to select the screen/tab to record
                     displayStreamForRecording = await navigator.mediaDevices.getDisplayMedia({
                         video: {
-                            displaySurface: "browser", 
+                            displaySurface: "browser",
                             frameRate: { ideal: targetFps }
                         },
-                        audio: false, 
+                        audio: false,
                         preferCurrentTab: true
                     });
 
@@ -4651,7 +4709,7 @@
                         if (isRecording) document.getElementById('stop-btn').click();
                     };
                 } catch (err) {
-                    showToast("Screen capture canceled. Recording aborted.", "error");
+                    showToast("Recording canceled.", "error");
                     startBtn.disabled = false;
                     return; // Exit if they cancel the prompt
                 }
@@ -4729,13 +4787,13 @@
                 recordingIndicator.classList.remove('hidden'); recordingIndicator.classList.add('flex');
 
                 // Start Recording Timer
-                timerInterval = setInterval(() => { 
-                    if (!isPaused) { 
-                        secondsRecorded++; 
-                        updateTimer(); 
-                    } 
+                timerInterval = setInterval(() => {
+                    if (!isPaused) {
+                        secondsRecorded++;
+                        updateTimer();
+                    }
                 }, 1000);
-                
+
                 showToast('Recording started...', 'success');
 
             } catch (err) {
@@ -4747,9 +4805,9 @@
 
                 // 2. Re-enable the Start button so they can try again
                 startBtn.disabled = false;
-                
+
                 // 3. Handle the error messaging
-                if (err.name !== 'AbortError') { 
+                if (err.name !== 'AbortError') {
                     // Ignore if the user just canceled the save dialog window, otherwise show error
                     showToast('Failed to start recording.', 'error');
                     console.error("Recording Initialization Error:", err);
