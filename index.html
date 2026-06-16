@@ -215,6 +215,47 @@
             border-color: #818cf8;
         }
 
+        .mask-image-tp {
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+            mask-image: linear-gradient(to bottom, transparent, black 15%, black 85%, transparent);
+        }
+
+        /* Teleprompter Styling & Massive Resize Handle */
+        #teleprompter-overlay {
+            resize: both;
+            /* Enables top/down left/right resizing */
+            overflow: hidden;
+            min-width: 300px;
+            min-height: 200px;
+        }
+
+        /* Teleprompter Strict Formatting Override */
+        #tp-scroll-content * {
+            color: inherit !important;
+            font-size: inherit !important;
+            background: transparent !important;
+            font-family: inherit !important;
+            line-height: 1.5 !important;
+        }
+
+        /* Make the bottom-right grabber huge and visible */
+        #teleprompter-overlay::-webkit-resizer {
+            background-color: #6366f1;
+            border: 4px solid #0f172a;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Hide scrollbar for the text, but keep it scrollable */
+        #tp-scroll-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #tp-scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+
         /* Chrome, Safari, Edge */
         input::-webkit-outer-spin-button,
         input::-webkit-inner-spin-button {
@@ -313,7 +354,7 @@
                 width: 3.5rem !important;
             }
 
-            /* CRITICAL FIX: Cleanly hide all tiny text spans (Move, Stroke, Board Color) */
+            /* Cleanly hide all tiny text spans (Move, Stroke, Board Color) */
             aside.w-16 span {
                 display: none !important;
             }
@@ -504,6 +545,17 @@
                         <div class="w-8 h-4 bg-slate-800 rounded-full relative cursor-pointer" id="pip-toggle-track">
                             <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200"
                                 id="pip-toggle-knob"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-1 pt-2 border-t border-slate-700/50 flex items-center justify-between">
+                        <label class="text-xs font-medium text-slate-400 flex flex-col">
+                            <span>Record Audio Only</span>
+                            <span class="text-[10px] text-slate-500 font-normal">Disables video output</span>
+                        </label>
+                        <div class="w-8 h-4 bg-slate-800 rounded-full relative cursor-pointer"
+                            id="audio-only-toggle-track">
+                            <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200"
+                                id="audio-only-toggle-knob"></div>
                         </div>
                     </div>
                     <div class="space-y-1">
@@ -878,9 +930,65 @@
                                 id="reels-toggle-knob"></div>
                         </div>
                     </div>
+                    <!-- Teleprompter Toggle -->
+                    <div class="space-y-1 pt-2 border-t border-slate-700/50">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs font-medium text-slate-400 flex flex-col">
+                                <span class="flex items-center gap-1.5"></i> Teleprompter</span>
+                                <span class="text-[10px] text-slate-500 font-normal">Floating script overlay</span>
+                            </label>
+                            <div class="w-8 h-4 bg-slate-800 rounded-full relative cursor-pointer" id="tp-toggle-track">
+                                <div class="w-4 h-4 bg-slate-400 rounded-full absolute left-0 transition-all duration-200"
+                                    id="tp-toggle-knob"></div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden Settings (Revealed when Toggled) -->
+                        <div id="tp-settings-panel"
+                            class="hidden flex-col gap-3 pt-3 mt-2 border-t border-slate-700/50">
+                            <textarea id="tp-text"
+                                class="w-full bg-slate-800 border border-slate-600 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-indigo-500 transition-colors"
+                                rows="3" placeholder="Paste your script here..."></textarea>
+
+                            <button id="tp-play"
+                                class="w-full bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium py-1.5 rounded-lg transition-colors shadow-lg shadow-emerald-500/20">
+                                ▶ Play Auto-Scroll
+                            </button>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-medium text-slate-400 flex justify-between">Speed
+                                        <span id="val-tp-speed" class="font-mono text-white">5</span></label>
+                                    <input type="range" id="tp-speed" min="1" max="20" value="5" class="w-full">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-medium text-slate-400 flex justify-between">Size
+                                        <span id="val-tp-size" class="font-mono text-white">48px</span></label>
+                                    <input type="range" id="tp-size" min="24" max="96" value="48" class="w-full">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2 items-end">
+                                <div class="space-y-1">
+                                    <label
+                                        class="text-[10px] font-medium text-slate-400 flex justify-between">Background
+                                        <span id="val-tp-opacity" class="font-mono text-white">60%</span></label>
+                                    <input type="range" id="tp-opacity" min="0" max="100" value="60" class="w-full">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[10px] font-medium text-slate-400">Font Color</label>
+                                    <input type="color" id="tp-color" value="#ffffff"
+                                        class="w-full h-5 rounded cursor-pointer bg-transparent border-0 p-0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
             </details>
+
+
+
 
             <!-- Tools & Toggles -->
             <div class="mt-auto space-y-2 pt-2 border-t border-slate-700">
@@ -1073,6 +1181,23 @@
                         title="Next Page">
                         <i class="fa-solid fa-chevron-right text-xs"></i>
                     </button>
+                </div>
+            </div>
+        </div>
+        <!-- Teleprompter Overlay -->
+        <div id="teleprompter-overlay"
+            class="absolute top-10 left-1/2 -translate-x-1/2 w-3/5 h-80 bg-black/60 backdrop-blur-md border-2 border-slate-600 rounded-xl z-50 hidden flex-col shadow-2xl">
+
+            <div id="tp-drag-handle"
+                class="w-full h-8 bg-slate-900/80 hover:bg-slate-700/80 cursor-move flex items-center justify-center shrink-0 border-b border-slate-700 transition-colors"
+                title="Drag to move">
+                <div class="w-16 h-1.5 bg-slate-500 rounded-full"></div>
+            </div>
+
+            <div id="tp-scroll-container" class="relative flex-1 overflow-y-auto px-8 pb-32 pt-10">
+                <div id="tp-scroll-content" contenteditable="true" spellcheck="false"
+                    class="text-center font-semibold leading-relaxed tracking-wide drop-shadow-lg outline-none"
+                    style="font-size: 48px; color: #ffffff;">
                 </div>
             </div>
         </div>
@@ -1277,7 +1402,7 @@
             camZoom: 1, camPanX: 0, camPanY: 0, micVolume: 100, showPip: true,
             pipSize: 150, pipBorderWidth: 6, pipBorderColor: '#ffffff',
             wbTool: 'pen1', pen1Color: '#ef4444', pen2Color: '#000000', highlighterColor: '#fbbf24',
-            wbSize: 16, wbBg: 'white', reelsMode: false,
+            wbSize: 16, wbBg: 'white', reelsMode: false, audioOnlyMode: false,
             camBrightness: 100, camContrast: 100, camSaturation: 100, useVignette: false, camShadows: 0,
             // background blur options
             bgBlurNoImg: 15,
@@ -1624,7 +1749,9 @@
 
         // Consolidated High-Performance Keyboard Router & Shortcuts
         window.addEventListener('keydown', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.isContentEditable) {
+                return;
+            }
 
             const key = e.key.toLowerCase();
 
@@ -1951,6 +2078,7 @@
                 }
 
                 updateToggleUI(document.getElementById('pip-toggle-knob'), document.getElementById('pip-toggle-track'), S.showPip);
+                updateToggleUI(document.getElementById('audio-only-toggle-knob'), document.getElementById('audio-only-toggle-track'), S.audioOnlyMode);
 
                 document.getElementById('cam-brightness').value = S.camBrightness;
                 document.getElementById('val-brightness').textContent = `${S.camBrightness}%`;
@@ -2274,6 +2402,19 @@
             S.showPip = !S.showPip;
             updateToggleUI(document.getElementById('pip-toggle-knob'), document.getElementById('pip-toggle-track'), S.showPip);
             saveSettings();
+        });
+
+        document.getElementById('audio-only-toggle-track').addEventListener('click', () => {
+            S.audioOnlyMode = !S.audioOnlyMode;
+            updateToggleUI(document.getElementById('audio-only-toggle-knob'), document.getElementById('audio-only-toggle-track'), S.audioOnlyMode);
+            saveSettings();
+
+            // Show instant feedback when toggled
+            if (S.audioOnlyMode) {
+                showToast("No video will record, only audio will record.", "info");
+            } else {
+                showToast("Video recording re-enabled.", "info");
+            }
         });
 
         document.getElementById('vignette-toggle-track').addEventListener('click', () => {
@@ -4647,7 +4788,11 @@
         let currentMediaOutput = null;
 
         async function startRecording() {
+
             // 1. Resume Audio Context if suspended
+            if (S.audioOnlyMode) {
+                showToast("Audio Only mode active. Turn off in Audio & Video Controls to record video also.", "info");
+            }
             if (audioContext && audioContext.state === 'suspended') audioContext.resume();
 
             // 2. Countdown Logic
@@ -5342,6 +5487,196 @@
         });
         window.addEventListener('resize', resizeCanvases);
 
+        // ==========================================
+        // ADVANCED TELEPROMPTER ENGINE V3
+        // ==========================================
+        const tpToggleTrack = document.getElementById('tp-toggle-track');
+        const tpToggleKnob = document.getElementById('tp-toggle-knob');
+        const tpSettingsPanel = document.getElementById('tp-settings-panel');
+        const tpPlay = document.getElementById('tp-play');
+        const tpText = document.getElementById('tp-text');
+        const tpSpeedInput = document.getElementById('tp-speed');
+        const tpSizeInput = document.getElementById('tp-size');
+        const tpOpacityInput = document.getElementById('tp-opacity');
+        const tpColorInput = document.getElementById('tp-color');
+        const tpOverlay = document.getElementById('teleprompter-overlay');
+        const tpScrollContainer = document.getElementById('tp-scroll-container');
+        const tpScrollContent = document.getElementById('tp-scroll-content');
+        const tpDragHandle = document.getElementById('tp-drag-handle');
+
+        let tpIsActive = false;
+        let tpIsPlaying = false;
+        let tpAnimFrame;
+        let exactScrollTop = 0;
+
+        // Toggle Prompter & Settings
+        tpToggleTrack.addEventListener('click', () => {
+            tpIsActive = !tpIsActive;
+
+            if (tpIsActive) {
+                tpToggleKnob.classList.add('translate-x-4', 'bg-white');
+                tpToggleKnob.classList.remove('bg-slate-400');
+                tpToggleTrack.classList.add('bg-indigo-500');
+                tpToggleTrack.classList.remove('bg-slate-800');
+
+                tpSettingsPanel.classList.remove('hidden');
+                tpSettingsPanel.classList.add('flex');
+                tpOverlay.classList.remove('hidden');
+                tpOverlay.classList.add('flex');
+
+                if (!tpText.value) tpText.value = "Type directly here or in the sidebar...";
+                tpScrollContent.innerHTML = tpText.value.replace(/\n/g, '<br>');
+                tpScrollContainer.scrollTop = 0;
+                exactScrollTop = 0;
+            } else {
+                tpToggleKnob.classList.remove('translate-x-4', 'bg-white');
+                tpToggleKnob.classList.add('bg-slate-400');
+                tpToggleTrack.classList.remove('bg-indigo-500');
+                tpToggleTrack.classList.add('bg-slate-800');
+
+                tpSettingsPanel.classList.add('hidden');
+                tpSettingsPanel.classList.remove('flex');
+                tpOverlay.classList.add('hidden');
+                tpOverlay.classList.remove('flex');
+
+                tpIsPlaying = false;
+                tpPlay.innerHTML = '▶ Play Auto-Scroll';
+                tpPlay.classList.replace('bg-amber-600', 'bg-emerald-600');
+                cancelAnimationFrame(tpAnimFrame);
+            }
+        });
+
+        // TWO-WAY TEXT BINDING
+        tpText.addEventListener('input', (e) => {
+            tpScrollContent.innerHTML = e.target.value.replace(/\n/g, '<br>');
+        });
+
+        tpScrollContent.addEventListener('input', () => {
+            // Keep sidebar updated when typing on the glass
+            // We use innerText to strip out weird HTML formatting from pasted text
+            tpText.value = tpScrollContent.innerText;
+        });
+
+        // BULLETPROOF AUTO-SCROLL ENGINE
+        tpPlay.addEventListener('click', () => {
+            tpIsPlaying = !tpIsPlaying;
+
+            if (tpIsPlaying) {
+                tpPlay.innerHTML = '⏸ Pause Scrolling';
+                tpPlay.classList.replace('bg-emerald-600', 'bg-amber-600');
+
+                let lastTime = performance.now();
+                // Capture exact position the moment play is pressed
+                exactScrollTop = tpScrollContainer.scrollTop;
+
+                const scrollLoop = (time) => {
+                    if (!tpIsPlaying) return;
+                    const dt = time - lastTime;
+                    lastTime = time;
+
+                    const speed = parseFloat(tpSpeedInput.value);
+                    exactScrollTop += (speed * dt) / 50;
+
+                    tpScrollContainer.scrollTop = exactScrollTop;
+
+                    // Auto-stop at bottom
+                    if (tpScrollContainer.scrollTop + tpScrollContainer.clientHeight >= tpScrollContainer.scrollHeight - 2) {
+                        tpIsPlaying = false;
+                        tpPlay.innerHTML = '▶ Play Auto-Scroll';
+                        tpPlay.classList.replace('bg-amber-600', 'bg-emerald-600');
+                        return;
+                    }
+
+                    tpAnimFrame = requestAnimationFrame(scrollLoop);
+                };
+                tpAnimFrame = requestAnimationFrame(scrollLoop);
+            } else {
+                // PAUSE TRIGGERED
+                tpPlay.innerHTML = '▶ Play Auto-Scroll';
+                tpPlay.classList.replace('bg-amber-600', 'bg-emerald-600');
+                cancelAnimationFrame(tpAnimFrame);
+                // Lock in the exact coordinate when paused so it doesn't jump
+                exactScrollTop = tpScrollContainer.scrollTop;
+            }
+        });
+
+        // USER MANUAL SCROLL OVERRIDE (Fixes fighting the auto-scroller)
+        const syncManualScroll = () => {
+            if (tpIsPlaying) exactScrollTop = tpScrollContainer.scrollTop;
+        };
+        // Listen for mouse wheel and touch swiping
+        tpScrollContainer.addEventListener('wheel', syncManualScroll, { passive: true });
+        tpScrollContainer.addEventListener('touchmove', syncManualScroll, { passive: true });
+
+        // Listen for physical scrollbar dragging
+        tpScrollContainer.addEventListener('mousedown', () => {
+            window.addEventListener('mousemove', syncManualScroll);
+            window.addEventListener('mouseup', () => {
+                window.removeEventListener('mousemove', syncManualScroll);
+            }, { once: true });
+        });
+
+        // Settings Handlers (Size & Color are applied strictly to the wrapper)
+        tpSpeedInput.addEventListener('input', (e) => {
+            document.getElementById('val-tp-speed').textContent = e.target.value;
+        });
+
+        tpSizeInput.addEventListener('input', (e) => {
+            const size = e.target.value;
+            document.getElementById('val-tp-size').textContent = size + 'px';
+            tpScrollContent.style.fontSize = size + 'px';
+        });
+
+        tpColorInput.addEventListener('input', (e) => {
+            tpScrollContent.style.color = e.target.value;
+        });
+
+        tpOpacityInput.addEventListener('input', (e) => {
+            const opacity = e.target.value;
+            document.getElementById('val-tp-opacity').textContent = opacity + '%';
+            tpOverlay.style.backgroundColor = `rgba(0, 0, 0, ${opacity / 100})`;
+
+            if (opacity < 10) {
+                tpOverlay.classList.remove('backdrop-blur-md');
+            } else {
+                tpOverlay.classList.add('backdrop-blur-md');
+            }
+        });
+
+        // Smooth Dragging Logic (Using the top bar)
+        let isDraggingTp = false;
+        let tpStartX, tpStartY, tpInitialX, tpInitialY;
+
+        tpDragHandle.addEventListener('mousedown', (e) => {
+            isDraggingTp = true;
+            tpStartX = e.clientX;
+            tpStartY = e.clientY;
+
+            const rect = tpOverlay.getBoundingClientRect();
+            const parentRect = tpOverlay.parentElement.getBoundingClientRect();
+
+            tpInitialX = rect.left - parentRect.left;
+            tpInitialY = rect.top - parentRect.top;
+
+            tpOverlay.classList.remove('left-1/2', '-translate-x-1/2');
+            tpOverlay.style.left = tpInitialX + 'px';
+            tpOverlay.style.top = tpInitialY + 'px';
+            tpOverlay.style.right = 'auto';
+            tpOverlay.style.bottom = 'auto';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDraggingTp) return;
+            const dx = e.clientX - tpStartX;
+            const dy = e.clientY - tpStartY;
+
+            tpOverlay.style.left = (tpInitialX + dx) + 'px';
+            tpOverlay.style.top = (tpInitialY + dy) + 'px';
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDraggingTp = false;
+        });
 
     </script>
 </body>
