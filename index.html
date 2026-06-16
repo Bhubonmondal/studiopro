@@ -339,10 +339,10 @@
                 padding: 1rem !important;
             }
 
-            /* --- MAIN CANVAS AREA (More breathing room) --- */
+            /* --- MAIN CANVAS AREA (More breathing room) ---
             main {
                 padding: 0.5rem !important;
-            }
+            } */
 
             /* --- RIGHT TOOLBAR (Fixing the overflowing text/broken UI) --- */
             aside.w-16 {
@@ -502,7 +502,7 @@
                             <button id="choose-dir-btn"
                                 class="bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded text-xs px-2 py-1 text-white whitespace-nowrap transition-colors"
                                 title="Select default save folder">
-                                <i class="fa-solid fa-folder-open text-indigo-400 mr-1"></i> Change Folder
+                                <i class="fa-solid fa-folder-open text-indigo-400 mr-1"></i> Set Default Folder
                             </button>
                             <div id="save-dir-display"
                                 class="text-[10px] text-slate-400 truncate w-full bg-slate-800/50 px-2 py-1 rounded border border-slate-700/50"
@@ -1077,7 +1077,7 @@
     </aside>
 
     <!-- Main Content Area -->
-    <main class="flex-1 flex flex-col relative overflow-hidden bg-slate-950 p-4 md:p-8">
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-slate-950 p-2">
 
         <!-- Top bar overlay -->
         <div class="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-10 pointer-events-none">
@@ -1101,7 +1101,8 @@
         </div>
 
         <!-- PDF Toolbar — Centered Top (Only visible when presentation media is active) -->
-        <div id="pdf-toolbar" class="hidden items-center gap-3 absolute top-1 left-1/2 -translate-x-1/2 z-20 px-2 py-1">
+        <div id="pdf-toolbar"
+            class="hidden items-center justify-center gap-3 relative z-40 w-fit mx-auto mb-2 shrink-0 px-2 py-1">
             <span class="text-[11px] font-medium max-w-[140px] truncate text-slate-400"
                 id="pdf-tb-title">file.pdf</span>
             <div class="w-px h-3.5 bg-slate-700"></div>
@@ -1130,7 +1131,8 @@
         </div>
 
         <!-- Video Preview Canvas Container -->
-        <div class="w-full h-full flex items-center justify-center relative cursor-default" id="canvas-container">
+        <div class="w-full flex-1 min-h-0 flex items-center justify-center relative cursor-default"
+            id="canvas-container">
             <div
                 class="relative w-full max-w-[1600px] aspect-video rounded-xl md:rounded-2xl overflow-hidden shadow-2xl shadow-black ring-1 ring-slate-800 bg-black group">
 
@@ -2581,6 +2583,31 @@
             }
         }
 
+        // Add this helper function to cache the AI mask
+        window.updateHqMaskCanvas = function (mask) {
+            const width = mask.width;
+            const height = mask.height;
+            const maskData = mask.getAsFloat32Array();
+
+            hqMaskCanvas.width = width;
+            hqMaskCanvas.height = height;
+            const imgData = hqMaskCtx.createImageData(width, height);
+            const data = imgData.data;
+
+            // Create a black silhouette where the background is solid
+            for (let i = 0; i < maskData.length; i++) {
+                if (maskData[i] > 0.4) {
+                    data[i * 4] = 0;
+                    data[i * 4 + 1] = 0;
+                    data[i * 4 + 2] = 0;
+                    data[i * 4 + 3] = 255; // Opaque Black (Erases background)
+                } else {
+                    data[i * 4 + 3] = 0; // Transparent (Keeps foreground)
+                }
+            }
+            hqMaskCtx.putImageData(imgData, 0, 0);
+        };
+
 
         // High-Quality Vision Task Segmentation (Asynchronous Engine Guard Fix)
         // Online High-Quality Multi-Class Engine Setup
@@ -3569,6 +3596,7 @@
             let colorAdjustments = `brightness(${S.camBrightness}%) contrast(${S.camContrast}%) saturate(${S.camSaturation}%)`;
 
             // --- 1. HQ BLUR LOGIC ---
+            // --- 1. HQ BLUR LOGIC ---
             if (activeEffect === 'bg-blur-hq' && currentSegmentationMask) {
                 if (typeof currentSegmentationMask.getAsFloat32Array !== 'function') {
                     ctxToDraw.filter = colorAdjustments;
@@ -3577,10 +3605,9 @@
                     return;
                 }
 
-                const mask = currentSegmentationMask;
-                const maskData = mask.getAsFloat32Array();
-                const width = mask.width;
-                const height = mask.height;
+                // SAFELY grab dimensions from the cached GPU canvas
+                const width = hqMaskCanvas.width || 256;
+                const height = hqMaskCanvas.height || 256;
 
                 // STEP 1: Draw Background
                 ctxToDraw.save();
@@ -3616,21 +3643,15 @@
                 // NATIVE SHADOW LIFT
                 if (S.camShadows && S.camShadows > 0) {
                     hqFgCtx.globalCompositeOperation = 'screen';
-                    hqFgCtx.globalAlpha = (S.camShadows / 100) * 0.4; // 40% max opacity
+                    hqFgCtx.globalAlpha = (S.camShadows / 100) * 0.4;
                     hqFgCtx.drawImage(videoEl, 0, 0, width, height);
                 }
+
+                // PUNCH OUT THE BACKGROUND USING THE CACHED GPU MASK
+                hqFgCtx.globalCompositeOperation = 'destination-out';
+                hqFgCtx.drawImage(hqMaskCanvas, 0, 0, width, height);
                 hqFgCtx.restore();
 
-                const fgImgData = hqFgCtx.getImageData(0, 0, width, height);
-                const pixels = fgImgData.data;
-
-                for (let i = 0; i < maskData.length; i++) {
-                    if (maskData[i] > 0.4) {
-                        pixels[i * 4 + 3] = 0;
-                    }
-                }
-
-                hqFgCtx.putImageData(fgImgData, 0, 0);
                 ctxToDraw.drawImage(hqFgCanvas, drawX, drawY, drawW, drawH);
                 return;
             }
@@ -3816,15 +3837,31 @@
                         const result = imageSegmenter.segmentForVideo(cameraVideo, now);
 
                         if (result && result.confidenceMasks && result.confidenceMasks.length > 0) {
-                            // Clean up the allocated instance from the previous frame
+                            // 1. Clean up the allocated instance from the previous frame
                             if (lastHqMaskInstance && typeof lastHqMaskInstance.close === 'function') {
                                 lastHqMaskInstance.close();
                             }
 
-                            // Extract and preserve the current mask
+                            // 2. Extract and preserve the current background mask
                             const newMask = result.confidenceMasks[0];
                             currentSegmentationMask = newMask;
                             lastHqMaskInstance = newMask;
+
+                            // 3. Safely update the GPU cache
+                            try {
+                                if (typeof window.updateHqMaskCanvas === 'function') {
+                                    window.updateHqMaskCanvas(newMask);
+                                }
+                            } catch (e) {
+                                console.error("Mask caching bypassed:", e);
+                            }
+
+                            // 4. CRITICAL MEMORY LEAK FIX: Close all OTHER masks returned by the multiclass model
+                            for (let i = 1; i < result.confidenceMasks.length; i++) {
+                                if (result.confidenceMasks[i] && typeof result.confidenceMasks[i].close === 'function') {
+                                    result.confidenceMasks[i].close();
+                                }
+                            }
                         }
                     }
                 }
@@ -4539,7 +4576,8 @@
                 const dist = Math.hypot(pos.x - pipX, pos.y - pipY);
                 if (dist <= S.pipSize) {
                     isDraggingPip = true;
-                    uiCanvas.style.cursor = 'none';
+                    updateCursor();
+                    // uiCanvas.style.cursor = 'none';
                     return;
                 }
             }
@@ -4609,7 +4647,8 @@
                 const dist = Math.hypot(pos.x - pipX, pos.y - pipY);
                 if (dist <= S.pipSize) {
                     isHoveringPip = true;
-                    uiCanvas.style.cursor = 'none';
+                    // uiCanvas.style.cursor = 'none';
+                    updateCursor();
                 } else {
                     updateCursor();
                 }
@@ -4620,7 +4659,8 @@
             if (isDraggingPip) {
                 pipX = pos.x; pipY = pos.y;
                 clampPipBounds();
-                uiCanvas.style.cursor = 'none';
+                // uiCanvas.style.cursor = 'none';
+                updateCursor();
                 return;
             }
 
