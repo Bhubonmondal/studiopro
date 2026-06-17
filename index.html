@@ -703,11 +703,11 @@
                             </button>
                         </div>
 
-                        <div
+                        <!-- <div
                             class="flex justify-between items-center text-[11px] text-slate-400 bg-slate-800 p-2 rounded-lg border border-slate-700 text-center gap-2 leading-tight">
                             <span>Scroll/Arrow: Pan Y</span>
                             <span>Ctrl+Scroll: Zoom</span>
-                        </div>
+                        </div> -->
 
                         <button id="pdf-close-btn"
                             class="w-full bg-slate-800 hover:bg-slate-700 text-red-400 border border-red-900/50 text-xs font-medium py-2 rounded-lg transition-colors">
@@ -3812,9 +3812,20 @@
             ctxToDraw.restore();
         }
 
+        let lastFrameTime = 0;
+        const TARGET_FPS = 30;
+        const FRAME_DURATION = 1000 / TARGET_FPS;
+
         function renderCanvas() {
 
             const now = performance.now();
+
+            // Only process AI and Canvas updates if enough time has passed
+            if (now - lastFrameTime < FRAME_DURATION) {
+                animationFrameId = requestAnimationFrame(renderCanvas);
+                return;
+            }
+            lastFrameTime = now;
 
             // --- Inside renderCanvas() loop ---
             if (S.effect === 'bg-blur') {
@@ -3846,6 +3857,12 @@
                             const newMask = result.confidenceMasks[0];
                             currentSegmentationMask = newMask;
                             lastHqMaskInstance = newMask;
+
+                            for (let i = 1; i < result.confidenceMasks.length; i++) {
+                                if (result.confidenceMasks[i] && typeof result.confidenceMasks[i].close === 'function') {
+                                    result.confidenceMasks[i].close();
+                                }
+                            }
 
                             // 3. Safely update the GPU cache
                             try {
